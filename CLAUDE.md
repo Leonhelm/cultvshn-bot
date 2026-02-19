@@ -24,6 +24,7 @@ src/
 ├── app/                          # Слой приложения
 │   ├── entrypoints/              # Точки входа
 │   │   ├── poll.js               # Long polling (Keenetic OS 5)
+│   │   ├── poll-daemon.js        # Daemon-supervisor для poll.js
 │   │   └── cron.js               # GitHub Actions cron (каждые 30 мин)
 │   └── config/                   # Конфигурация приложения
 │       ├── index.js
@@ -94,13 +95,22 @@ src/
 - Опрашивает `https://api.telegram.org/bot${TG_BOT_API_TOKEN}/getUpdates`
 - При получении сообщения: приветствует пользователя, выводит ФИО и chat id
 
-### 2. Cron (`app/entrypoints/cron.js`)
+### 2. Poll daemon (`app/entrypoints/poll-daemon.js`)
+
+- Supervisor-процесс: запускает `poll.js` как дочерний процесс
+- Перезапускает при аварийном завершении (exit code !== 0)
+- Exponential backoff: 1s → 2s → 4s → ... → 60s (сброс после 60s стабильной работы)
+- При получении SIGTERM/SIGINT пробрасывает сигнал дочернему процессу
+- Не перезапускает при чистом завершении (exit code 0)
+- Поддерживает команду `stop` для остановки работающего daemon
+
+### 3. Cron (`app/entrypoints/cron.js`)
 
 - Запускается через GitHub Actions каждые 30 минут
 - Страховка: выполняет ту же работу, что и poll (приветствие)
 - Дополнительно: сложная работа (пока заглушка)
 
-## Доставка на Keenetic
+## Доставка и запуск на Keenetic
 
 Исходники скачиваются напрямую из main-ветки:
 
@@ -109,6 +119,28 @@ https://github.com/Leonhelm/cultvshn-bot/archive/refs/heads/main.zip
 ```
 
 Без сборки — файлы запускаются as-is после `npm install`.
+
+### Установка init.d скрипта (одноразово)
+
+```bash
+cp scripts/init.d/S99cultvshn-bot /opt/etc/init.d/S99cultvshn-bot
+chmod +x /opt/etc/init.d/S99cultvshn-bot
+```
+
+### Управление
+
+```bash
+/opt/etc/init.d/S99cultvshn-bot start    # Запуск daemon
+/opt/etc/init.d/S99cultvshn-bot stop     # Остановка
+/opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск
+/opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса
+```
+
+### Логи
+
+```bash
+tail -f /opt/var/log/cultvshn-bot.log
+```
 
 ## Поведение чата
 
@@ -138,7 +170,9 @@ https://github.com/Leonhelm/cultvshn-bot/archive/refs/heads/main.zip
 ## Команды
 
 ```bash
-npm run start:poll    # Запуск long polling
-npm run start:cron    # Запуск cron задачи
-npm run typecheck     # Проверка типов (tsc --noEmit)
+npm run start:poll          # Запуск long polling (для отладки)
+npm run start:poll-daemon   # Запуск long polling через daemon (production)
+npm run stop:poll-daemon    # Остановка daemon
+npm run start:cron          # Запуск cron задачи
+npm run typecheck           # Проверка типов (tsc --noEmit)
 ```

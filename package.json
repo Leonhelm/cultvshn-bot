@@ -4,6 +4,8 @@
   "type": "module",
   "scripts": {
     "start:poll": "node src/app/entrypoints/poll.js",
+    "start:poll-daemon": "node src/app/entrypoints/poll-daemon.js",
+    "stop:poll-daemon": "node src/app/entrypoints/poll-daemon.js stop",
     "start:cron": "node src/app/entrypoints/cron.js",
     "typecheck": "tsc --noEmit"
   },
