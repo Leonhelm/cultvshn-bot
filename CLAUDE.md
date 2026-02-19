@@ -127,6 +127,8 @@ cp scripts/init.d/S99cultvshn-bot /opt/etc/init.d/S99cultvshn-bot
 chmod +x /opt/etc/init.d/S99cultvshn-bot
 ```
 
+Правим пути в /opt/etc/init.d/S99cultvshn-bot под свои расположения
+
 ### Управление
 
 ```bash

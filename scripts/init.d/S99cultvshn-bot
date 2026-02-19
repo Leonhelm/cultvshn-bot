@@ -1,9 +1,9 @@
 #!/bin/sh
 
 SCRIPT_NAME="cultvshn-bot"
-BOT_DIR="/opt/home/cultvshn-bot"
+BOT_DIR="/tmp/mnt/181ADB641ADB3E06/projects/cultvshn/cultvshn-bot-main"
 NODE_BIN="/opt/bin/node"
-DAEMON_SCRIPT="src/app/entrypoints/poll-daemon.js"
+DAEMON_SCRIPT="${BOT_DIR}/src/app/entrypoints/poll-daemon.js"
 
 PID_FILE="${BOT_DIR}/poll-daemon.pid"
 LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
