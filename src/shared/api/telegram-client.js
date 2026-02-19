@@ -1,10 +1,9 @@
 import { env } from "../config/index.js";
 import { logInfo, logError } from "../lib/index.js";
-import type { TgResponse, TgUpdate, TgMessage } from "../types/index.js";
 
 const BASE_URL = `https://api.telegram.org/bot${env.TG_BOT_API_TOKEN}`;
 
-async function callApi<T>(method: string, body?: Record<string, unknown>): Promise<T> {
+async function callApi(method, body) {
   const url = `${BASE_URL}/${method}`;
 
   const response = await fetch(url, {
@@ -13,7 +12,7 @@ async function callApi<T>(method: string, body?: Record<string, unknown>): Promi
     body: body ? JSON.stringify(body) : undefined,
   });
 
-  const data = (await response.json()) as TgResponse<T>;
+  const data = await response.json();
 
   if (!data.ok) {
     throw new Error(`Telegram API error [${method}]: ${data.description ?? "unknown"}`);
@@ -22,26 +21,26 @@ async function callApi<T>(method: string, body?: Record<string, unknown>): Promi
   return data.result;
 }
 
-export async function getUpdates(offset?: number): Promise<TgUpdate[]> {
+export async function getUpdates(offset) {
   logInfo(`getUpdates${offset != null ? ` (offset=${offset})` : ""}`);
-  return callApi<TgUpdate[]>("getUpdates", {
+  return callApi("getUpdates", {
     offset,
     timeout: 30,
   });
 }
 
-export async function sendMessage(chatId: number, text: string): Promise<TgMessage> {
+export async function sendMessage(chatId, text) {
   logInfo(`sendMessage to chat ${chatId}`);
-  return callApi<TgMessage>("sendMessage", {
+  return callApi("sendMessage", {
     chat_id: chatId,
     text,
   });
 }
 
-export async function deleteMessage(chatId: number, messageId: number): Promise<boolean> {
+export async function deleteMessage(chatId, messageId) {
   logInfo(`deleteMessage ${messageId} from chat ${chatId}`);
   try {
-    return await callApi<boolean>("deleteMessage", {
+    return await callApi("deleteMessage", {
       chat_id: chatId,
       message_id: messageId,
     });

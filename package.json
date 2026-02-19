@@ -1,24 +1,20 @@
 {
   "name": "cultvshn-bot",
-  "version": "1.0.0",
-  "description": "Telegram-бот @cultvshn_bot",
+  "private": true,
   "type": "module",
   "scripts": {
-    "build": "node esbuild.config.mjs",
-    "start:poll": "node dist/poll.mjs",
-    "start:cron": "node dist/cron.mjs",
+    "start:poll": "node src/app/entrypoints/poll.js",
+    "start:cron": "node src/app/entrypoints/cron.js",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
-    "node": ">=18"
-  },
-  "license": "Apache-2.0",
-  "devDependencies": {
-    "@types/node": "^18.19.130",
-    "esbuild": "^0.19.0",
-    "typescript": "^5.3.0"
+    "node": "18.20.2"
   },
   "dependencies": {
     "dotenv": "^16.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.19.130",
+    "typescript": "^5.3.0"
   }
 }

@@ -1,6 +1,6 @@
 import "dotenv/config";
 
-function requireEnv(name: string): string {
+function requireEnv(name) {
   const value = process.env[name];
   if (!value) {
     throw new Error(`Missing required environment variable: ${name}`);
@@ -11,4 +11,4 @@ function requireEnv(name: string): string {
 export const env = {
   TG_BOT_API_TOKEN: requireEnv("TG_BOT_API_TOKEN"),
   TG_BOT_ADMIN: requireEnv("TG_BOT_ADMIN"),
-} as const;
+};
