@@ -1,0 +1,74 @@
+#!/bin/sh
+
+SCRIPT_NAME="cultvshn-bot"
+BOT_DIR="/opt/home/cultvshn-bot"
+NODE_BIN="/opt/bin/node"
+DAEMON_SCRIPT="src/app/entrypoints/poll-daemon.js"
+
+PID_FILE="${BOT_DIR}/poll-daemon.pid"
+LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
+
+start() {
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "$SCRIPT_NAME is already running (PID $(cat "$PID_FILE"))"
+        return 1
+    fi
+
+    echo "Starting $SCRIPT_NAME..."
+
+    cd "$BOT_DIR" || exit 1
+
+    nohup "$NODE_BIN" "$DAEMON_SCRIPT" >> "$LOG_FILE" 2>&1 &
+
+    sleep 1
+
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "$SCRIPT_NAME started (PID $(cat "$PID_FILE"))"
+    else
+        echo "Failed to start $SCRIPT_NAME"
+        return 1
+    fi
+}
+
+stop() {
+    if [ ! -f "$PID_FILE" ]; then
+        echo "$SCRIPT_NAME is not running (no PID file)"
+        return 1
+    fi
+
+    cd "$BOT_DIR" || exit 1
+
+    echo "Stopping $SCRIPT_NAME..."
+    "$NODE_BIN" "$DAEMON_SCRIPT" stop
+}
+
+status() {
+    if [ -f "$PID_FILE" ] && kill -0 "$(cat "$PID_FILE")" 2>/dev/null; then
+        echo "$SCRIPT_NAME is running (PID $(cat "$PID_FILE"))"
+    else
+        echo "$SCRIPT_NAME is not running"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        sleep 2
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0

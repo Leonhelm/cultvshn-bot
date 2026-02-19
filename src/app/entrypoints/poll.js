@@ -4,6 +4,16 @@ import { logInfo, logError, maskToken } from "../../shared/lib/index.js";
 import { greet } from "../../features/greeting/index.js";
 import { deletePreviousBotMessage, deleteUserMessage } from "../../features/chat-cleanup/index.js";
 
+let running = true;
+
+function shutdown(signal) {
+  logInfo(`Received ${signal}, shutting down gracefully...`);
+  running = false;
+}
+
+process.on("SIGTERM", () => shutdown("SIGTERM"));
+process.on("SIGINT", () => shutdown("SIGINT"));
+
 async function handleUpdate(update) {
   const message = update.message;
   if (!message) return;
@@ -18,11 +28,13 @@ async function handleUpdate(update) {
 async function pollLoop() {
   let offset;
 
-  while (true) {
+  while (running) {
     try {
       const updates = await getUpdates(offset);
 
       for (const update of updates) {
+        if (!running) break;
+
         try {
           await handleUpdate(update);
         } catch (error) {
@@ -35,7 +47,9 @@ async function pollLoop() {
       await new Promise((resolve) => setTimeout(resolve, 5000));
     }
   }
+
+  logInfo("Poll loop stopped");
 }
 
 logInfo(`Bot started (poll mode), token: ${maskToken(env.TG_BOT_API_TOKEN)}`);
-pollLoop();
+await pollLoop();
