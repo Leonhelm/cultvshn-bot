@@ -1,10 +1,9 @@
 import { sendMessage } from "../../shared/api/index.js";
 import { logInfo } from "../../shared/lib/index.js";
-import type { TgMessage } from "../../shared/types/index.js";
 import { formatUserName } from "../../entities/user/index.js";
 import { setLastBotMessage } from "../../entities/message/index.js";
 
-export async function greet(incoming: TgMessage): Promise<void> {
+export async function greet(incoming) {
   const chatId = incoming.chat.id;
   const user = incoming.from;
 

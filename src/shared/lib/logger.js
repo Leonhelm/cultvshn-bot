@@ -1,17 +1,17 @@
-function timestamp(): string {
+function timestamp() {
   return new Date().toISOString();
 }
 
-export function logInfo(message: string): void {
+export function logInfo(message) {
   console.log(`[${timestamp()}] INFO: ${message}`);
 }
 
-export function logError(message: string, error?: unknown): void {
+export function logError(message, error) {
   const details = error instanceof Error ? ` — ${error.message}` : "";
   console.error(`[${timestamp()}] ERROR: ${message}${details}`);
 }
 
-export function maskToken(token: string): string {
+export function maskToken(token) {
   if (token.length <= 4) return "****";
   return `***${token.slice(-4)}`;
 }

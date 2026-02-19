@@ -3,9 +3,8 @@ import { getUpdates } from "../../shared/api/index.js";
 import { logInfo, logError, maskToken } from "../../shared/lib/index.js";
 import { greet } from "../../features/greeting/index.js";
 import { deletePreviousBotMessage, deleteUserMessage } from "../../features/chat-cleanup/index.js";
-import type { TgUpdate } from "../../shared/types/index.js";
 
-async function handleUpdate(update: TgUpdate): Promise<void> {
+async function handleUpdate(update) {
   const message = update.message;
   if (!message) return;
 
@@ -16,7 +15,7 @@ async function handleUpdate(update: TgUpdate): Promise<void> {
   await deleteUserMessage(message);
 }
 
-async function processPendingUpdates(): Promise<void> {
+async function processPendingUpdates() {
   try {
     const updates = await getUpdates();
 

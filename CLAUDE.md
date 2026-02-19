@@ -8,8 +8,9 @@ Telegram-бот [@cultvshn_bot](https://t.me/cultvshn_bot). Две точки в
 
 ## Стек технологий
 
-- **Runtime:** Node.js 18 (ограничение Keenetic OS 5)
-- **Язык:** TypeScript (последняя версия), полная типизация, `strict: true`
+- **Runtime:** Node.js 18.20.2 (ограничение Keenetic OS 5)
+- **Язык:** JavaScript (.js) + декларации TypeScript (.d.ts), `strict: true`, `allowJs: true`
+- **Без сборки:** файлы запускаются напрямую через `node`, без транспиляции
 - **Зависимости:** без сторонних пакетов, кроме редких исключений
   - Разрешено: `dotenv` (чтение .env)
   - Любая новая зависимость требует явного обоснования
@@ -22,31 +23,57 @@ Telegram-бот [@cultvshn_bot](https://t.me/cultvshn_bot). Две точки в
 src/
 ├── app/                          # Слой приложения
 │   ├── entrypoints/              # Точки входа
-│   │   ├── poll.ts               # Long polling (Keenetic OS 5)
-│   │   └── cron.ts               # GitHub Actions cron (каждые 30 мин)
+│   │   ├── poll.js               # Long polling (Keenetic OS 5)
+│   │   └── cron.js               # GitHub Actions cron (каждые 30 мин)
 │   └── config/                   # Конфигурация приложения
+│       ├── index.js
+│       └── index.d.ts
 │
 ├── features/                     # Фичи (пользовательские сценарии)
 │   ├── greeting/                 # Приветствие: ФИО + chat id
+│   │   ├── greet.js + greet.d.ts
+│   │   ├── index.js + index.d.ts
 │   └── chat-cleanup/             # Очистка окна чата
+│       ├── cleanup.js + cleanup.d.ts
+│       ├── index.js + index.d.ts
 │
 ├── entities/                     # Доменные сущности
 │   ├── user/                     # Пользователь
+│   │   ├── format-user-name.js + format-user-name.d.ts
+│   │   ├── index.js + index.d.ts
 │   └── message/                  # Сообщение
+│       ├── last-bot-message.js + last-bot-message.d.ts
+│       ├── index.js + index.d.ts
 │
 └── shared/                       # Переиспользуемый код
     ├── api/                      # Клиент Telegram Bot API (fetch)
+    │   ├── telegram-client.js + telegram-client.d.ts
+    │   ├── index.js + index.d.ts
     ├── config/                   # Чтение переменных окружения (dotenv)
+    │   ├── env.js + env.d.ts
+    │   ├── index.js + index.d.ts
     ├── lib/                      # Утилиты
-    └── types/                    # Общие типы
+    │   ├── logger.js + logger.d.ts
+    │   ├── index.js + index.d.ts
+    └── types/                    # Общие типы (.d.ts only — без .js)
+        ├── telegram.d.ts
+        └── index.d.ts
 ```
 
 ### Правила FSD
 
 - Зависимости только сверху вниз: `app → features → entities → shared`
 - Обратные зависимости запрещены (shared не импортирует из features)
-- Каждый слайс экспортирует public API через `index.ts`
-- Внутренности слайса недоступны снаружи — импорт только из `index.ts`
+- Каждый слайс экспортирует public API через `index.js` + `index.d.ts`
+- Внутренности слайса недоступны снаружи — импорт только из `index.js`
+
+### Правила .js + .d.ts
+
+- Код — в `.js` файлах (чистый JavaScript, без аннотаций типов)
+- Типы — в `.d.ts` файлах (декларации публичного API модуля)
+- Слайс `shared/types/` содержит только `.d.ts` файлы (чистые типы, без runtime-кода)
+- В `.js` файлах нет `import type` — такие импорты существуют только в `.d.ts`
+- С `moduleResolution: Node16` путь `"./telegram.js"` в `.d.ts` корректно резолвится в `telegram.d.ts`
 
 ## Переменные окружения
 
@@ -61,18 +88,27 @@ src/
 
 ## Точки входа
 
-### 1. Long polling (`app/entrypoints/poll.ts`)
+### 1. Long polling (`app/entrypoints/poll.js`)
 
-- Запускается на Keenetic OS 5
+- Запускается на Keenetic OS 5 напрямую: `node src/app/entrypoints/poll.js`
 - Опрашивает `https://api.telegram.org/bot${TG_BOT_API_TOKEN}/getUpdates`
 - При получении сообщения: приветствует пользователя, выводит ФИО и chat id
-- Собирается в единый файл `poll.mjs` (ESM)
 
-### 2. Cron (`app/entrypoints/cron.ts`)
+### 2. Cron (`app/entrypoints/cron.js`)
 
 - Запускается через GitHub Actions каждые 30 минут
 - Страховка: выполняет ту же работу, что и poll (приветствие)
 - Дополнительно: сложная работа (пока заглушка)
+
+## Доставка на Keenetic
+
+Исходники скачиваются напрямую из main-ветки:
+
+```
+https://github.com/Leonhelm/cultvshn-bot/archive/refs/heads/main.zip
+```
+
+Без сборки — файлы запускаются as-is после `npm install`.
 
 ## Поведение чата
 
@@ -80,14 +116,6 @@ src/
 
 1. **Перед отправкой** нового сообщения бота — удалить предыдущее сообщение бота
 2. **После получения** сообщения пользователя — немедленно удалить его
-
-## Релизы
-
-- Каждый push в `main` создаёт новый релиз
-- Артефакты релиза:
-  - `https://github.com/Leonhelm/cultvshn/releases/latest/download/poll.mjs` — точка входа long polling
-  - `https://github.com/Leonhelm/cultvshn/releases/latest/download/poll.mjs.sha256` — контрольная сумма
-- Предыдущие релизы автоматически удаляются
 
 ## Логирование
 
@@ -97,20 +125,19 @@ src/
 
 ## Соглашения по коду
 
-- Именование файлов: `kebab-case.ts`
+- Именование файлов: `kebab-case.js` + `kebab-case.d.ts`
 - Именование типов/интерфейсов: `PascalCase`
 - Именование переменных/функций: `camelCase`
 - Именование констант окружения: `UPPER_SNAKE_CASE`
-- Каждый слайс FSD содержит `index.ts` — public API слайса
-- Не импортировать из внутренностей слайса напрямую, только через `index.ts`
+- Каждый слайс FSD содержит `index.js` + `index.d.ts` — public API слайса
+- Не импортировать из внутренностей слайса напрямую, только через `index.js`
 - Используем нативный `fetch` (доступен в Node.js 18)
 - `async/await` вместо колбэков и `.then()`
-- Явные типы возвращаемых значений у публичных функций
+- Явные типы возвращаемых значений у публичных функций (в `.d.ts`)
 
 ## Команды
 
 ```bash
-npm run build         # Сборка проекта
 npm run start:poll    # Запуск long polling
 npm run start:cron    # Запуск cron задачи
 npm run typecheck     # Проверка типов (tsc --noEmit)
