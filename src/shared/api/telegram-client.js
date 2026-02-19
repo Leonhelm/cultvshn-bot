@@ -25,7 +25,7 @@ export async function getUpdates(offset) {
   logInfo(`getUpdates${offset != null ? ` (offset=${offset})` : ""}`);
   return callApi("getUpdates", {
     offset,
-    timeout: 30,
+    timeout: 5, // важно оставить меньше 10 - в Node.js 18 есть проблема с этим https://github.com/nodejs/undici/issues/4405
   });
 }
 
