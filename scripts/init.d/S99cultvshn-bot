@@ -1,0 +1,111 @@
+#!/bin/sh
+
+SCRIPT_NAME="cultvshn-bot"
+BASE_DIR="/tmp/mnt/181ADB641ADB3E06/projects/cultvshn"
+BOT_DIR="${BASE_DIR}/cultvshn-bot-main"
+DEPLOY_SCRIPT="${BASE_DIR}/deploy.sh"
+DEPLOY_PID_FILE="${BASE_DIR}/deploy.pid"
+NODE_BIN="/opt/bin/node"
+BOT_PID_FILE="${BOT_DIR}/poll-daemon.pid"
+LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
+
+start() {
+    if [ -f "$DEPLOY_PID_FILE" ] && kill -0 "$(cat "$DEPLOY_PID_FILE")" 2>/dev/null; then
+        echo "$SCRIPT_NAME is already running (deploy PID $(cat "$DEPLOY_PID_FILE"))"
+        return 1
+    fi
+
+    echo "Starting $SCRIPT_NAME..."
+    /bin/sh "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1 &
+
+    sleep 3
+
+    if [ -f "$DEPLOY_PID_FILE" ] && kill -0 "$(cat "$DEPLOY_PID_FILE")" 2>/dev/null; then
+        echo "$SCRIPT_NAME started (deploy PID $(cat "$DEPLOY_PID_FILE"))"
+    else
+        echo "Failed to start $SCRIPT_NAME"
+        return 1
+    fi
+}
+
+stop() {
+    stopped=0
+
+    if [ -f "$DEPLOY_PID_FILE" ]; then
+        deploy_pid=$(cat "$DEPLOY_PID_FILE")
+        if kill -0 "$deploy_pid" 2>/dev/null; then
+            echo "Stopping deploy script (PID $deploy_pid)..."
+            kill "$deploy_pid"
+            sleep 5
+            if kill -0 "$deploy_pid" 2>/dev/null; then
+                kill -9 "$deploy_pid" 2>/dev/null
+            fi
+            stopped=1
+        fi
+        rm -f "$DEPLOY_PID_FILE"
+    fi
+
+    if [ -f "$BOT_PID_FILE" ]; then
+        bot_pid=$(cat "$BOT_PID_FILE")
+        if kill -0 "$bot_pid" 2>/dev/null; then
+            echo "Stopping bot daemon (PID $bot_pid)..."
+            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/app/entrypoints/poll-daemon.js stop 2>&1
+            sleep 3
+            if kill -0 "$bot_pid" 2>/dev/null; then
+                kill -9 "$bot_pid" 2>/dev/null
+            fi
+            stopped=1
+        fi
+    fi
+
+    if [ "$stopped" -eq 0 ]; then
+        echo "$SCRIPT_NAME is not running"
+    else
+        echo "$SCRIPT_NAME stopped"
+    fi
+}
+
+status() {
+    deploy_running=0
+    bot_running=0
+
+    if [ -f "$DEPLOY_PID_FILE" ] && kill -0 "$(cat "$DEPLOY_PID_FILE")" 2>/dev/null; then
+        deploy_running=1
+    fi
+    if [ -f "$BOT_PID_FILE" ] && kill -0 "$(cat "$BOT_PID_FILE")" 2>/dev/null; then
+        bot_running=1
+    fi
+
+    if [ "$deploy_running" -eq 1 ] && [ "$bot_running" -eq 1 ]; then
+        echo "$SCRIPT_NAME is running (deploy PID $(cat "$DEPLOY_PID_FILE"), bot PID $(cat "$BOT_PID_FILE"))"
+    elif [ "$deploy_running" -eq 1 ]; then
+        echo "$SCRIPT_NAME deploy is running (PID $(cat "$DEPLOY_PID_FILE")), bot is not running"
+    elif [ "$bot_running" -eq 1 ]; then
+        echo "$SCRIPT_NAME bot is running (PID $(cat "$BOT_PID_FILE")), deploy script is not running"
+    else
+        echo "$SCRIPT_NAME is not running"
+    fi
+}
+
+case "$1" in
+    start)
+        start
+        ;;
+    stop)
+        stop
+        ;;
+    restart)
+        stop
+        sleep 2
+        start
+        ;;
+    status)
+        status
+        ;;
+    *)
+        echo "Usage: $0 {start|stop|restart|status}"
+        exit 1
+        ;;
+esac
+
+exit 0
