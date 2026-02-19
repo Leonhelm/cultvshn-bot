@@ -1,0 +1,25 @@
+name: Cron
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+jobs:
+  cron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - run: npm run start:cron
+        env:
+          TG_BOT_API_TOKEN: ${{ secrets.TG_BOT_API_TOKEN }}
+          TG_BOT_ADMIN: ${{ secrets.TG_BOT_ADMIN }}
