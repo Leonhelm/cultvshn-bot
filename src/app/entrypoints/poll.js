@@ -1,6 +1,12 @@
 import { env } from "../../shared/config/index.js";
 import { getUpdates } from "../../shared/api/index.js";
 import { logInfo, logError, maskToken } from "../../shared/lib/index.js";
+import { getOffset, setOffsetBatch, createBatch } from "../../shared/db/index.js";
+import {
+  saveIncomingMessageBatch,
+  getUnprocessedMessages,
+  deleteProcessedMessage,
+} from "../../entities/message/index.js";
 import { greet } from "../../features/greeting/index.js";
 import { deletePreviousBotMessage, deleteUserMessage } from "../../features/chat-cleanup/index.js";
 
@@ -14,37 +20,57 @@ function shutdown(signal) {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
-async function handleUpdate(update) {
-  const message = update.message;
-  if (!message) return;
+async function fetchAndStore() {
+  let offset = await getOffset();
+  const updates = await getUpdates(offset);
 
-  const chatId = message.chat.id;
+  if (updates.length === 0) return;
 
-  await deletePreviousBotMessage(chatId);
-  await greet(message);
-  await deleteUserMessage(message);
+  logInfo(`Received ${updates.length} updates, storing to Firestore`);
+
+  const batch = createBatch();
+
+  for (const update of updates) {
+    if (update.message) {
+      saveIncomingMessageBatch(batch, update.update_id, update.message);
+    }
+    offset = update.update_id + 1;
+  }
+
+  setOffsetBatch(batch, offset);
+  await batch.commit();
+}
+
+async function processMessages() {
+  const messages = await getUnprocessedMessages();
+
+  for (const msg of messages) {
+    if (!running) break;
+
+    try {
+      await deletePreviousBotMessage(msg.chatId);
+      await greet(msg);
+      await deleteUserMessage(msg.chatId, msg.messageId);
+      await deleteProcessedMessage(msg.updateId);
+    } catch (error) {
+      logError(`Error processing message ${msg.updateId}`, error);
+    }
+  }
 }
 
 async function pollLoop() {
-  let offset;
-
   while (running) {
     try {
-      const updates = await getUpdates(offset);
-
-      for (const update of updates) {
-        if (!running) break;
-
-        try {
-          await handleUpdate(update);
-        } catch (error) {
-          logError(`Error handling update ${update.update_id}`, error);
-        }
-        offset = update.update_id + 1;
-      }
+      await fetchAndStore();
     } catch (error) {
       logError("Error fetching updates", error);
       await new Promise((resolve) => setTimeout(resolve, 5000));
+    }
+
+    try {
+      await processMessages();
+    } catch (error) {
+      logError("Error processing messages", error);
     }
   }
 

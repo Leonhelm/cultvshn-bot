@@ -1,13 +1,22 @@
-const lastBotMessages = new Map();
+import { db } from "../../shared/db/index.js";
 
-export function setLastBotMessage(chatId, messageId) {
-  lastBotMessages.set(chatId, messageId);
+const botMessagesCollection = db.collection("botMessages");
+
+export async function setLastBotMessage(chatId, messageId) {
+  await botMessagesCollection.doc(String(chatId)).set({
+    messageId,
+    createdAt: new Date(),
+  });
 }
 
-export function getLastBotMessage(chatId) {
-  return lastBotMessages.get(chatId);
+export async function getLastBotMessage(chatId) {
+  const doc = await botMessagesCollection.doc(String(chatId)).get();
+  if (!doc.exists) {
+    return undefined;
+  }
+  return doc.data().messageId;
 }
 
-export function clearLastBotMessage(chatId) {
-  lastBotMessages.delete(chatId);
+export async function clearLastBotMessage(chatId) {
+  await botMessagesCollection.doc(String(chatId)).delete();
 }
