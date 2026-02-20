@@ -178,30 +178,84 @@ src/
 https://github.com/Leonhelm/cultvshn-bot/archive/refs/heads/main.zip
 ```
 
-Без сборки — файлы запускаются as-is после `npm install`.
+Без сборки — файлы запускаются as-is после `npm ci`.
 
-### Установка init.d скрипта (одноразово)
+### Deploy-скрипт (`scripts/deploy.sh`)
 
-```bash
-cp scripts/init.d/S99cultvshn-bot /opt/etc/init.d/S99cultvshn-bot
-chmod +x /opt/etc/init.d/S99cultvshn-bot
+POSIX sh скрипт для автоматического деплоя и обновления на Keenetic OS 5 (git не установлен).
+
+**Что делает:**
+
+1. Скачивает zip-архив main-ветки с GitHub
+2. Распаковывает в `cultvshn-bot-main/`
+3. Создаёт symlink `.env` из базовой директории в проект
+4. Запускает `npm ci` и `poll-daemon`
+5. Каждые 60 минут проверяет наличие новой версии через GitHub API (`Accept: application/vnd.github.sha`)
+6. При обнаружении новой версии — останавливает демона, обновляет, перезапускает
+
+**Безопасность обновлений:**
+
+- Перед скачиванием старая директория переименовывается в `.old` (rename-then-delete)
+- При ошибке (download/extract/npm ci) — восстанавливается из `.old`
+- SHA коммита сохраняется только после полного успеха деплоя
+- При недоступности GitHub API — проверка пропускается, бот продолжает работать
+
+**Layout на устройстве:**
+
+```
+/tmp/mnt/181ADB641ADB3E06/projects/cultvshn/    (BASE_DIR)
+├── .env                    # Секреты (создаётся вручную один раз)
+├── .current-sha            # SHA текущего деплоя
+├── deploy.pid              # PID deploy-скрипта
+├── deploy.sh               # Скопирован из repo (chmod +x)
+└── cultvshn-bot-main/      # Распакованный проект
+    ├── .env                # Symlink → ../../.env
+    ├── poll-daemon.pid
+    ├── node_modules/
+    ├── package.json
+    └── src/
 ```
 
-Правим пути в /opt/etc/init.d/S99cultvshn-bot под свои расположения
+### Первоначальная установка (одноразово)
+
+```bash
+# 1. Создать базовую директорию
+mkdir -p /tmp/mnt/181ADB641ADB3E06/projects/cultvshn
+
+# 2. Создать .env с секретами
+cat > /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/.env << 'EOF'
+TG_BOT_API_TOKEN=...
+TG_BOT_ADMIN=...
+FIREBASE_SERVICE_ACCOUNT_JSON=...
+EOF
+
+# 3. Скачать deploy.sh
+curl -sL -o /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/deploy.sh \
+  "https://raw.githubusercontent.com/Leonhelm/cultvshn-bot/main/scripts/deploy.sh"
+chmod +x /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/deploy.sh
+
+# 4. Установить init.d скрипт
+curl -sL -o /opt/etc/init.d/S99cultvshn-bot \
+  "https://raw.githubusercontent.com/Leonhelm/cultvshn-bot/main/scripts/init.d/S99cultvshn-bot"
+chmod +x /opt/etc/init.d/S99cultvshn-bot
+
+# 5. Запустить
+/opt/etc/init.d/S99cultvshn-bot start
+```
 
 ### Управление
 
 ```bash
-/opt/etc/init.d/S99cultvshn-bot start    # Запуск daemon
-/opt/etc/init.d/S99cultvshn-bot stop     # Остановка
+/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + daemon
+/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + daemon
 /opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск
-/opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса
+/opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса (deploy + bot)
 ```
 
 ### Логи
 
 ```bash
-tail -f /opt/var/log/cultvshn-bot.log
+tail -f /opt/var/log/cultvshn-bot.log    # Логи бота и deploy-скрипта
 ```
 
 ## Поведение чата
