@@ -16,7 +16,7 @@ start() {
     fi
 
     echo "Starting $SCRIPT_NAME..."
-    "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1 &
+    /bin/sh "$DEPLOY_SCRIPT" >> "$LOG_FILE" 2>&1 &
 
     sleep 3
 
