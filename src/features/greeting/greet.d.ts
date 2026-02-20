@@ -1,3 +1,3 @@
-import type { TgMessage } from "../../shared/types/index.js";
+import type { IncomingMessage } from "../../entities/message/index.js";
 
-export declare function greet(incoming: TgMessage): Promise<void>;
+export declare function greet(msg: IncomingMessage): Promise<void>;

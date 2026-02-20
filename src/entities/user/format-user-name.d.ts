@@ -1,3 +1,4 @@
-import type { TgUser } from "../../shared/types/index.js";
-
-export declare function formatUserName(user: TgUser): string;
+export declare function formatUserName(user: {
+  first_name: string;
+  last_name?: string | null;
+}): string;

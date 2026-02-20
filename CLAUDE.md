@@ -4,15 +4,17 @@
 
 ## Обзор проекта
 
-Telegram-бот [@cultvshn_bot](https://t.me/cultvshn_bot). Две точки входа: long polling (основная, на Keenetic OS 5) и cron через GitHub Actions (страховка + дополнительная работа).
+Telegram-бот [@cultvshn_bot](https://t.me/cultvshn_bot). Точка входа: long polling (основная, на Keenetic OS 5).
 
 ## Стек технологий
 
 - **Runtime:** Node.js 18.20.2 (ограничение Keenetic OS 5)
 - **Язык:** JavaScript (.js) + декларации TypeScript (.d.ts), `strict: true`, `allowJs: true`
 - **Без сборки:** файлы запускаются напрямую через `node`, без транспиляции
-- **Зависимости:** без сторонних пакетов, кроме редких исключений
-  - Разрешено: `dotenv` (чтение .env)
+- **База данных:** Firebase Firestore (через `firebase-admin`)
+- **Зависимости:**
+  - `dotenv` (чтение .env)
+  - `firebase-admin` (Firestore — хранение состояния бота, данных чатов, очередь сообщений)
   - Любая новая зависимость требует явного обоснования
 
 ## Архитектура: Feature-Sliced Design v2.1
@@ -24,8 +26,7 @@ src/
 ├── app/                          # Слой приложения
 │   ├── entrypoints/              # Точки входа
 │   │   ├── poll.js               # Long polling (Keenetic OS 5)
-│   │   ├── poll-daemon.js        # Daemon-supervisor для poll.js
-│   │   └── cron.js               # GitHub Actions cron (каждые 30 мин)
+│   │   └── poll-daemon.js        # Daemon-supervisor для poll.js
 │   └── config/                   # Конфигурация приложения
 │       ├── index.js
 │       └── index.d.ts
@@ -39,10 +40,14 @@ src/
 │       ├── index.js + index.d.ts
 │
 ├── entities/                     # Доменные сущности
-│   ├── user/                     # Пользователь
+│   ├── chat/                     # Чат (данные пользователя + роль)
+│   │   ├── chat-repository.js + chat-repository.d.ts
+│   │   ├── index.js + index.d.ts
+│   ├── user/                     # Пользователь (форматирование имени)
 │   │   ├── format-user-name.js + format-user-name.d.ts
 │   │   ├── index.js + index.d.ts
-│   └── message/                  # Сообщение
+│   └── message/                  # Сообщение (очередь + last bot message)
+│       ├── incoming-message.js + incoming-message.d.ts
 │       ├── last-bot-message.js + last-bot-message.d.ts
 │       ├── index.js + index.d.ts
 │
@@ -52,6 +57,9 @@ src/
     │   ├── index.js + index.d.ts
     ├── config/                   # Чтение переменных окружения (dotenv)
     │   ├── env.js + env.d.ts
+    │   ├── index.js + index.d.ts
+    ├── db/                       # Firebase Firestore (инициализация + offset)
+    │   ├── firestore.js + firestore.d.ts
     │   ├── index.js + index.d.ts
     ├── lib/                      # Утилиты
     │   ├── logger.js + logger.d.ts
@@ -80,20 +88,78 @@ src/
 
 Файл `.env` в корне проекта, читается через `dotenv`:
 
-| Переменная        | Описание                  |
-| ----------------- | ------------------------- |
-| `TG_BOT_API_TOKEN` | Токен Telegram-бота       |
-| `TG_BOT_ADMIN`     | Chat ID админского чата   |
+| Переменная                     | Описание                                        |
+| ------------------------------ | ----------------------------------------------- |
+| `TG_BOT_API_TOKEN`             | Токен Telegram-бота                             |
+| `TG_BOT_ADMIN`                 | Chat ID админского чата                         |
+| `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON сервисного аккаунта Firebase (одной строкой) |
 
 **Важно:** `.env` в `.gitignore`, секреты никогда не попадают в репозиторий.
+
+Для получения `FIREBASE_SERVICE_ACCOUNT_JSON`:
+1. Firebase Console → Project Settings → Service Accounts → Generate New Private Key
+2. Сжать в одну строку: `cat serviceAccountKey.json | jq -c .`
+
+## Firebase Firestore
+
+### Модель данных
+
+**Коллекция `chats/{chatId}`** — данные чатов:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `firstName` | string | Имя пользователя |
+| `lastName` | string \| null | Фамилия |
+| `username` | string \| null | Ник в Telegram |
+| `role` | `"unverified"` \| `"verified"` \| `"admin"` | Роль (по умолчанию `"unverified"`) |
+| `createdAt` | Date | Дата создания записи |
+| `updatedAt` | Date | Дата последнего обновления |
+
+**Коллекция `messages/{updateId}`** — очередь необработанных сообщений пользователей:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `chatId` | number | ID чата |
+| `messageId` | number | ID сообщения в Telegram |
+| `from` | `{ id, first_name, last_name?, username? }` | Отправитель (формат TgUser) |
+| `text` | string \| null | Текст сообщения |
+| `date` | number | Unix timestamp |
+| `createdAt` | Date | Время записи |
+
+**Коллекция `botMessages/{chatId}`** — последнее сообщение бота на чат:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `messageId` | number | ID сообщения бота |
+| `createdAt` | Date | Время отправки |
+
+**Документ `botState/offset`** — offset для getUpdates:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `value` | number | Текущий offset |
+
+### Двухфазная обработка (poll.js)
+
+```
+Фаза 1 — Fetch & Store:
+  getUpdates(offset) → сохранить сообщения в Firestore (batch write) → сохранить offset
+
+Фаза 2 — Process:
+  Прочитать необработанные сообщения из Firestore
+  Для каждого: cleanup → greet → saveChat → delete processed
+```
+
+Такое разделение гарантирует, что при падении процесса данные не теряются — необработанные сообщения остаются в Firestore.
 
 ## Точки входа
 
 ### 1. Long polling (`app/entrypoints/poll.js`)
 
 - Запускается на Keenetic OS 5 напрямую: `node src/app/entrypoints/poll.js`
-- Опрашивает `https://api.telegram.org/bot${TG_BOT_API_TOKEN}/getUpdates`
-- При получении сообщения: приветствует пользователя, выводит ФИО и chat id
+- **Фаза 1:** опрашивает Telegram API (`getUpdates`), сохраняет сообщения в Firestore
+- **Фаза 2:** читает необработанные сообщения из Firestore, обрабатывает, удаляет из очереди
+- Offset хранится в Firestore — при перезапуске продолжает с того же места
 
 ### 2. Poll daemon (`app/entrypoints/poll-daemon.js`)
 
@@ -103,12 +169,6 @@ src/
 - При получении SIGTERM/SIGINT пробрасывает сигнал дочернему процессу
 - Не перезапускает при чистом завершении (exit code 0)
 - Поддерживает команду `stop` для остановки работающего daemon
-
-### 3. Cron (`app/entrypoints/cron.js`)
-
-- Запускается через GitHub Actions каждые 30 минут
-- Страховка: выполняет ту же работу, что и poll (приветствие)
-- Дополнительно: сложная работа (пока заглушка)
 
 ## Доставка и запуск на Keenetic
 
@@ -154,7 +214,7 @@ tail -f /opt/var/log/cultvshn-bot.log
 ## Логирование
 
 - Логируем основные действия: запуск, получение апдейтов, отправку/удаление сообщений, ошибки
-- **Запрещено** логировать: токен бота, содержимое .env, полные ответы API с токеном
+- **Запрещено** логировать: токен бота, содержимое .env, полные ответы API с токеном, service account JSON
 - Маскируем секреты: показываем только последние 4 символа токена (`***abcd`)
 
 ## Соглашения по коду
@@ -175,6 +235,5 @@ tail -f /opt/var/log/cultvshn-bot.log
 npm run start:poll          # Запуск long polling (для отладки)
 npm run start:poll-daemon   # Запуск long polling через daemon (production)
 npm run stop:poll-daemon    # Остановка daemon
-npm run start:cron          # Запуск cron задачи
 npm run typecheck           # Проверка типов (tsc --noEmit)
 ```
