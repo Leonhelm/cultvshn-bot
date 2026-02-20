@@ -126,6 +126,7 @@ function startDaemon() {
 
   process.on("SIGTERM", () => shutdown("SIGTERM"));
   process.on("SIGINT", () => shutdown("SIGINT"));
+  process.on("SIGHUP", () => {});
   process.on("exit", cleanup);
 
   function startChild() {

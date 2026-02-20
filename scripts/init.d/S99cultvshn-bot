@@ -18,7 +18,7 @@ start() {
 
     cd "$BOT_DIR" || exit 1
 
-    nohup "$NODE_BIN" "$DAEMON_SCRIPT" >> "$LOG_FILE" 2>&1 &
+    "$NODE_BIN" "$DAEMON_SCRIPT" >> "$LOG_FILE" 2>&1 &
 
     sleep 1
 
