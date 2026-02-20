@@ -10,6 +10,5 @@ function requireEnv(name) {
 
 export const env = {
   TG_BOT_API_TOKEN: requireEnv("TG_BOT_API_TOKEN"),
-  TG_BOT_ADMIN: requireEnv("TG_BOT_ADMIN"),
   FIREBASE_SERVICE_ACCOUNT_JSON: requireEnv("FIREBASE_SERVICE_ACCOUNT_JSON"),
 };

@@ -224,7 +224,7 @@ log_msg "========================================="
 
 if [ ! -f "$ENV_FILE" ]; then
     log_msg "FATAL: $ENV_FILE not found"
-    log_msg "Create it with TG_BOT_API_TOKEN, TG_BOT_ADMIN, FIREBASE_SERVICE_ACCOUNT_JSON"
+    log_msg "Create it with TG_BOT_API_TOKEN, FIREBASE_SERVICE_ACCOUNT_JSON"
     exit 1
 fi
 

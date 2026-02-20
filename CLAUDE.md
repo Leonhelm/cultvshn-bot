@@ -91,7 +91,6 @@ src/
 | Переменная                     | Описание                                        |
 | ------------------------------ | ----------------------------------------------- |
 | `TG_BOT_API_TOKEN`             | Токен Telegram-бота                             |
-| `TG_BOT_ADMIN`                 | Chat ID админского чата                         |
 | `FIREBASE_SERVICE_ACCOUNT_JSON` | JSON сервисного аккаунта Firebase (одной строкой) |
 
 **Важно:** `.env` в `.gitignore`, секреты никогда не попадают в репозиторий.
@@ -225,7 +224,6 @@ mkdir -p /tmp/mnt/181ADB641ADB3E06/projects/cultvshn
 # 2. Создать .env с секретами
 cat > /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/.env << 'EOF'
 TG_BOT_API_TOKEN=...
-TG_BOT_ADMIN=...
 FIREBASE_SERVICE_ACCOUNT_JSON=...
 EOF
 
