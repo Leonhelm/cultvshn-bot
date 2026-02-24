@@ -1,0 +1,5 @@
+{
+  "typescript.preferGoToSourceDefinition": true,
+  "javascript.preferGoToSourceDefinition": true,
+  "typescript.tsdk": "node_modules/typescript/lib"
+}

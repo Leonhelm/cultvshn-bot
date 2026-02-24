@@ -11,7 +11,7 @@ export async function greet(msg) {
   if (!user) return;
 
   const name = formatUserName(user);
-  const text = `Привет, ${name}! Твой chat id: ${chatId}!`;
+  const text = `Привет, ${name}! Твой chat id: ${chatId}`;
 
   logInfo(`Greeting user "${name}" in chat ${chatId}`);
 
