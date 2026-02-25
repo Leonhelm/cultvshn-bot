@@ -1,1 +1,1 @@
-export { formatUserName } from "./format-user-name.js";
+export { formatUserName, formatUserInfo } from "./format-user-name.js";

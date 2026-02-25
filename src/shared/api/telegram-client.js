@@ -37,6 +37,24 @@ export async function sendMessage(chatId, text) {
   });
 }
 
+export async function sendMessageWithMarkup(chatId, text, replyMarkup, parseMode) {
+  logInfo(`sendMessageWithMarkup to chat ${chatId}`);
+  return callApi("sendMessage", {
+    chat_id: chatId,
+    text,
+    reply_markup: replyMarkup,
+    parse_mode: parseMode,
+  });
+}
+
+export async function answerCallbackQuery(callbackQueryId, text) {
+  logInfo(`answerCallbackQuery ${callbackQueryId}`);
+  return callApi("answerCallbackQuery", {
+    callback_query_id: callbackQueryId,
+    text,
+  });
+}
+
 export async function deleteMessage(chatId, messageId) {
   logInfo(`deleteMessage ${messageId} from chat ${chatId}`);
   try {

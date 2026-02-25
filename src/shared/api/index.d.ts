@@ -1,1 +1,1 @@
-export { getUpdates, sendMessage, deleteMessage } from "./telegram-client.js";
+export { getUpdates, sendMessage, sendMessageWithMarkup, answerCallbackQuery, deleteMessage } from "./telegram-client.js";

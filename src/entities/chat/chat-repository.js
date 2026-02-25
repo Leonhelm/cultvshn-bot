@@ -51,3 +51,19 @@ export async function updateChatRole(chatId, role) {
     updatedAt: new Date(),
   });
 }
+
+export async function getChatsByRole(role) {
+  const snapshot = await chatsCollection.where("role", "==", role).get();
+  return snapshot.docs.map((doc) => {
+    const d = doc.data();
+    return {
+      chatId: Number(doc.id),
+      firstName: d.firstName,
+      lastName: d.lastName,
+      username: d.username,
+      role: d.role,
+      createdAt: d.createdAt.toDate(),
+      updatedAt: d.updatedAt.toDate(),
+    };
+  });
+}
