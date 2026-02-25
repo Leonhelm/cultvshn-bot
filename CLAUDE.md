@@ -35,20 +35,25 @@ src/
 │   ├── greeting/                 # Приветствие: ФИО + chat id
 │   │   ├── greet.js + greet.d.ts
 │   │   ├── index.js + index.d.ts
-│   └── chat-cleanup/             # Очистка окна чата
-│       ├── cleanup.js + cleanup.d.ts
+│   ├── chat-cleanup/             # Очистка окна чата
+│   │   ├── cleanup.js + cleanup.d.ts
+│   │   ├── index.js + index.d.ts
+│   └── verification/             # Верификация пользователей
+│       ├── verify.js + verify.d.ts
 │       ├── index.js + index.d.ts
 │
 ├── entities/                     # Доменные сущности
 │   ├── chat/                     # Чат (данные пользователя + роль)
 │   │   ├── chat-repository.js + chat-repository.d.ts
 │   │   ├── index.js + index.d.ts
-│   ├── user/                     # Пользователь (форматирование имени)
+│   ├── user/                     # Пользователь (форматирование имени + информации)
 │   │   ├── format-user-name.js + format-user-name.d.ts
 │   │   ├── index.js + index.d.ts
-│   └── message/                  # Сообщение (очередь + last bot message)
+│   └── message/                  # Сообщения (очереди + отслеживание)
 │       ├── incoming-message.js + incoming-message.d.ts
+│       ├── incoming-callback.js + incoming-callback.d.ts
 │       ├── last-bot-message.js + last-bot-message.d.ts
+│       ├── confirmation-message.js + confirmation-message.d.ts
 │       ├── index.js + index.d.ts
 │
 └── shared/                       # Переиспользуемый код
@@ -132,32 +137,61 @@ src/
 | `messageId` | number | ID сообщения бота |
 | `createdAt` | Date | Время отправки |
 
+**Коллекция `callbackQueries/{updateId}`** — очередь необработанных callback-запросов:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `callbackQueryId` | string | Telegram callback_query.id |
+| `fromChatId` | number | Chat ID отправителя (админа) |
+| `from` | `{ id, first_name, last_name?, username? }` | Отправитель |
+| `messageId` | number \| null | ID сообщения с кнопкой |
+| `data` | string \| null | callback_data (`verify:{chatId}` или `reject:{chatId}`) |
+| `createdAt` | Date | Время записи |
+
+**Коллекция `confirmationMessages/{autoId}`** — отслеживание сообщений подтверждения:
+
+| Поле | Тип | Описание |
+|------|-----|----------|
+| `adminChatId` | number | Chat ID администратора |
+| `messageId` | number | ID сообщения в Telegram (для удаления) |
+| `targetChatId` | number | Chat ID неверифицированного пользователя |
+| `createdAt` | Date | Время отправки |
+
 **Документ `botState/offset`** — offset для getUpdates:
 
 | Поле | Тип | Описание |
 |------|-----|----------|
 | `value` | number | Текущий offset |
 
-### Двухфазная обработка (poll.js)
+### Трёхфазная обработка (poll.js)
 
 ```
 Фаза 1 — Fetch & Store:
-  getUpdates(offset) → сохранить сообщения в Firestore (batch write) → сохранить offset
+  getUpdates(offset) → сохранить messages и callback_queries в Firestore (batch write) → сохранить offset
 
-Фаза 2 — Process:
+Фаза 2 — Process Messages:
   Прочитать необработанные сообщения из Firestore
-  Для каждого: cleanup → greet → saveChat → delete processed
+  Для каждого: deleteUserMessage → определить роль → маршрутизация:
+    unverified → deletePreviousBotMessage → handleUnverifiedUser
+    verified/admin → deletePreviousBotMessage → greet
+
+Фаза 3 — Process Callbacks:
+  Прочитать необработанные callback-запросы из Firestore
+  Для каждого: handleVerificationCallback → оркестрация результата:
+    verify → deletePreviousBotMessage → greet
+    reject → deletePreviousBotMessage → sendMessage("отклонён")
 ```
 
-Такое разделение гарантирует, что при падении процесса данные не теряются — необработанные сообщения остаются в Firestore.
+Такое разделение гарантирует, что при падении процесса данные не теряются — необработанные сообщения и callback-запросы остаются в Firestore.
 
 ## Точки входа
 
 ### 1. Long polling (`app/entrypoints/poll.js`)
 
 - Запускается на Keenetic OS 5 напрямую: `node src/app/entrypoints/poll.js`
-- **Фаза 1:** опрашивает Telegram API (`getUpdates`), сохраняет сообщения в Firestore
-- **Фаза 2:** читает необработанные сообщения из Firestore, обрабатывает, удаляет из очереди
+- **Фаза 1:** опрашивает Telegram API (`getUpdates`), сохраняет сообщения и callback-запросы в Firestore
+- **Фаза 2:** читает необработанные сообщения, маршрутизирует по ролям (unverified → верификация, verified/admin → приветствие)
+- **Фаза 3:** читает необработанные callback-запросы, обрабатывает решения по верификации
 - Offset хранится в Firestore — при перезапуске продолжает с того же места
 
 ### 2. Poll daemon (`app/entrypoints/poll-daemon.js`)
@@ -255,6 +289,40 @@ chmod +x /opt/etc/init.d/S99cultvshn-bot
 ```bash
 tail -f /opt/var/log/cultvshn-bot.log    # Логи бота и deploy-скрипта
 ```
+
+## Ролевая модель
+
+| Роль | Описание | Поведение при сообщении |
+|------|----------|------------------------|
+| `unverified` | Неверифицированный пользователь (по умолчанию) | Получает «ожидайте подтверждения», админам рассылается запрос на верификацию |
+| `verified` | Верифицированный пользователь | Получает приветствие-заглушку (`features/greeting`) |
+| `admin` | Администратор | Получает приветствие-заглушку + может подтверждать/отклонять пользователей |
+
+Первый администратор создаётся вручную в Firestore (установка `role: "admin"` для нужного chatId).
+
+## Типы сообщений бота
+
+| Тип | Описание | Жизненный цикл | Хранение в Firestore |
+|-----|----------|-----------------|---------------------|
+| **Общения** | Основные ответы бота пользователю | Удаляется перед отправкой следующего | `botMessages/{chatId}` — одно на чат |
+| **Подтверждения** | Запросы на верификацию для админов (с inline-кнопками) | Удаляется при действии или потере актуальности | `confirmationMessages/{autoId}` — по одному на админа на пользователя |
+| **Информационные** | Уведомления о результатах (добавлен/не добавлен) | Не удаляются, остаются в чате | Не отслеживаются |
+
+## Верификация пользователей (`features/verification`)
+
+### Поток верификации
+
+1. **Неверифицированный пользователь пишет** → получает сообщение общения «Ожидайте подтверждения администратором» → всем админам рассылается сообщение подтверждения с inline-клавиатурой: «Добавить пользователя {имя} {фамилия} {ссылка на профиль}?» + кнопки «Добавить» / «Отклонить»
+2. **Админ нажимает «Добавить»** → пользователь становится `verified` → получает приветствие → у остальных админов удаляются сообщения подтверждения → им приходит информационное сообщение «Пользователь ... добавлен»
+3. **Админ нажимает «Отклонить»** → пользователь остаётся `unverified` → получает сообщение об отклонении → у остальных админов удаляются сообщения подтверждения → им приходит информационное сообщение «Пользователь ... не был добавлен»
+
+### Повторные сообщения от неверифицированного
+
+При каждом сообщении неверифицированного пользователя: старые сообщения подтверждения у админов удаляются, рассылаются новые.
+
+### FSD-совместимость
+
+`features/verification` импортирует только из `entities` и `shared`. Оркестрация между `features/verification`, `features/greeting` и `features/chat-cleanup` происходит в `app`-слое (`poll.js`).
 
 ## Поведение чата
 

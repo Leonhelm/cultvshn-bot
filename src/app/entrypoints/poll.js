@@ -1,14 +1,20 @@
 import { env } from "../../shared/config/index.js";
-import { getUpdates } from "../../shared/api/index.js";
+import { getUpdates, sendMessage } from "../../shared/api/index.js";
 import { logInfo, logError, maskToken } from "../../shared/lib/index.js";
 import { getOffset, setOffsetBatch, createBatch } from "../../shared/db/index.js";
 import {
   saveIncomingMessageBatch,
   getUnprocessedMessages,
   deleteProcessedMessage,
+  saveIncomingCallbackBatch,
+  getUnprocessedCallbacks,
+  deleteProcessedCallback,
+  setLastBotMessage,
 } from "../../entities/message/index.js";
+import { getChat } from "../../entities/chat/index.js";
 import { greet } from "../../features/greeting/index.js";
 import { deletePreviousBotMessage, deleteUserMessage } from "../../features/chat-cleanup/index.js";
+import { handleUnverifiedUser, handleVerificationCallback } from "../../features/verification/index.js";
 
 let running = true;
 
@@ -34,6 +40,9 @@ async function fetchAndStore() {
     if (update.message) {
       saveIncomingMessageBatch(batch, update.update_id, update.message);
     }
+    if (update.callback_query) {
+      saveIncomingCallbackBatch(batch, update.update_id, update.callback_query);
+    }
     offset = update.update_id + 1;
   }
 
@@ -48,12 +57,60 @@ async function processMessages() {
     if (!running) break;
 
     try {
-      await deletePreviousBotMessage(msg.chatId);
-      await greet(msg);
       await deleteUserMessage(msg.chatId, msg.messageId);
+
+      const chat = await getChat(msg.chatId);
+      const role = chat ? chat.role : "unverified";
+
+      if (role === "unverified") {
+        await deletePreviousBotMessage(msg.chatId);
+        await handleUnverifiedUser(msg);
+      } else {
+        await deletePreviousBotMessage(msg.chatId);
+        await greet(msg);
+      }
+
       await deleteProcessedMessage(msg.updateId);
     } catch (error) {
       logError(`Error processing message ${msg.updateId}`, error);
+    }
+  }
+}
+
+async function processCallbacks() {
+  const callbacks = await getUnprocessedCallbacks();
+
+  for (const cb of callbacks) {
+    if (!running) break;
+
+    try {
+      const result = await handleVerificationCallback(cb);
+
+      if (result && result.action === "verify") {
+        await deletePreviousBotMessage(result.targetChatId);
+        const chat = await getChat(result.targetChatId);
+        if (chat) {
+          await greet({
+            chatId: result.targetChatId,
+            from: {
+              id: result.targetChatId,
+              first_name: chat.firstName,
+              last_name: chat.lastName,
+              username: chat.username,
+            },
+          });
+        }
+      }
+
+      if (result && result.action === "reject") {
+        await deletePreviousBotMessage(result.targetChatId);
+        const sent = await sendMessage(result.targetChatId, "К сожалению, ваш запрос был отклонён");
+        await setLastBotMessage(result.targetChatId, sent.message_id);
+      }
+
+      await deleteProcessedCallback(cb.updateId);
+    } catch (error) {
+      logError(`Error processing callback ${cb.updateId}`, error);
     }
   }
 }
@@ -71,6 +128,12 @@ async function pollLoop() {
       await processMessages();
     } catch (error) {
       logError("Error processing messages", error);
+    }
+
+    try {
+      await processCallbacks();
+    } catch (error) {
+      logError("Error processing callbacks", error);
     }
   }
 

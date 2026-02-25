@@ -22,9 +22,26 @@ export interface TgMessage {
   text?: string;
 }
 
+export interface TgInlineKeyboardButton {
+  text: string;
+  callback_data?: string;
+}
+
+export interface TgInlineKeyboardMarkup {
+  inline_keyboard: TgInlineKeyboardButton[][];
+}
+
+export interface TgCallbackQuery {
+  id: string;
+  from: TgUser;
+  message?: TgMessage;
+  data?: string;
+}
+
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
+  callback_query?: TgCallbackQuery;
 }
 
 export interface TgResponse<T> {

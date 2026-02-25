@@ -12,3 +12,19 @@ export {
 } from "./incoming-message.js";
 
 export type { IncomingMessage } from "./incoming-message.js";
+
+export {
+  saveIncomingCallbackBatch,
+  getUnprocessedCallbacks,
+  deleteProcessedCallback,
+} from "./incoming-callback.js";
+
+export type { IncomingCallback } from "./incoming-callback.js";
+
+export {
+  saveConfirmationMessage,
+  getConfirmationsByTarget,
+  deleteConfirmationsByTarget,
+} from "./confirmation-message.js";
+
+export type { ConfirmationMessage } from "./confirmation-message.js";

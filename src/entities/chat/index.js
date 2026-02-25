@@ -1,1 +1,1 @@
-export { saveChat, getChat, updateChatRole } from "./chat-repository.js";
+export { saveChat, getChat, updateChatRole, getChatsByRole } from "./chat-repository.js";
