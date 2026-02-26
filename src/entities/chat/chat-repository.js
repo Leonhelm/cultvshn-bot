@@ -39,9 +39,17 @@ export async function getChat(chatId) {
     lastName: d.lastName,
     username: d.username,
     role: d.role,
+    state: d.state ?? null,
     createdAt: d.createdAt.toDate(),
     updatedAt: d.updatedAt.toDate(),
   };
+}
+
+export async function setChatState(chatId, state) {
+  await chatsCollection.doc(String(chatId)).update({
+    state: state ?? null,
+    updatedAt: new Date(),
+  });
 }
 
 export async function updateChatRole(chatId, role) {

@@ -12,9 +12,20 @@ import {
   setLastBotMessage,
 } from "../../entities/message/index.js";
 import { getChat } from "../../entities/chat/index.js";
-import { greet } from "../../features/greeting/index.js";
-import { deletePreviousBotMessage, deleteUserMessage } from "../../features/chat-cleanup/index.js";
+import {
+  deletePreviousBotMessage,
+  deleteUserMessage,
+  deleteOrderListMessages,
+} from "../../features/chat-cleanup/index.js";
 import { handleUnverifiedUser, handleVerificationCallback } from "../../features/verification/index.js";
+import {
+  showQuickMenu,
+  promptForOrderLink,
+  handleOrderLink,
+  handleListOrders,
+  handleDeleteOrder,
+  handleCancelOrder,
+} from "../../features/order/index.js";
 
 let running = true;
 
@@ -66,8 +77,16 @@ async function processMessages() {
         await deletePreviousBotMessage(msg.chatId);
         await handleUnverifiedUser(msg);
       } else {
-        await deletePreviousBotMessage(msg.chatId);
-        await greet(msg);
+        const state = chat ? chat.state : null;
+
+        if (state === "awaiting-order-link") {
+          await deletePreviousBotMessage(msg.chatId);
+          await handleOrderLink(msg);
+        } else {
+          await deletePreviousBotMessage(msg.chatId);
+          await deleteOrderListMessages(msg.chatId);
+          await showQuickMenu(msg.chatId);
+        }
       }
 
       await deleteProcessedMessage(msg.updateId);
@@ -77,6 +96,16 @@ async function processMessages() {
   }
 }
 
+function getCallbackType(data) {
+  if (!data) return "unknown";
+  if (data === "add-order") return "order";
+  if (data === "list-orders") return "order";
+  if (data.startsWith("delete-order:")) return "order";
+  if (data === "cancel") return "order";
+  if (/^(verify|reject):\d+$/.test(data)) return "verification";
+  return "unknown";
+}
+
 async function processCallbacks() {
   const callbacks = await getUnprocessedCallbacks();
 
@@ -84,28 +113,45 @@ async function processCallbacks() {
     if (!running) break;
 
     try {
-      const result = await handleVerificationCallback(cb);
+      const callbackType = getCallbackType(cb.data);
 
-      if (result && result.action === "verify") {
-        await deletePreviousBotMessage(result.targetChatId);
-        const chat = await getChat(result.targetChatId);
-        if (chat) {
-          await greet({
-            chatId: result.targetChatId,
-            from: {
-              id: result.targetChatId,
-              first_name: chat.firstName,
-              last_name: chat.lastName,
-              username: chat.username,
-            },
-          });
+      if (callbackType === "verification") {
+        const result = await handleVerificationCallback(cb);
+
+        if (result && result.action === "verify") {
+          await deletePreviousBotMessage(result.targetChatId);
+          await showQuickMenu(result.targetChatId);
         }
-      }
 
-      if (result && result.action === "reject") {
-        await deletePreviousBotMessage(result.targetChatId);
-        const sent = await sendMessage(result.targetChatId, "К сожалению, ваш запрос был отклонён");
-        await setLastBotMessage(result.targetChatId, sent.message_id);
+        if (result && result.action === "reject") {
+          await deletePreviousBotMessage(result.targetChatId);
+          const sent = await sendMessage(result.targetChatId, "К сожалению, ваш запрос был отклонён");
+          await setLastBotMessage(result.targetChatId, sent.message_id);
+        }
+      } else if (callbackType === "order") {
+        const chat = await getChat(cb.fromChatId);
+        const role = chat ? chat.role : "unverified";
+
+        if (role !== "verified" && role !== "admin") {
+          await deleteProcessedCallback(cb.updateId);
+          continue;
+        }
+
+        if (cb.data === "add-order") {
+          await deletePreviousBotMessage(cb.fromChatId);
+          await deleteOrderListMessages(cb.fromChatId);
+          await promptForOrderLink(cb.callbackQueryId, cb.fromChatId);
+        } else if (cb.data === "list-orders") {
+          await deletePreviousBotMessage(cb.fromChatId);
+          await deleteOrderListMessages(cb.fromChatId);
+          await handleListOrders(cb.callbackQueryId, cb.fromChatId);
+        } else if (cb.data?.startsWith("delete-order:")) {
+          await handleDeleteOrder(cb);
+        } else if (cb.data === "cancel") {
+          await deletePreviousBotMessage(cb.fromChatId);
+          await deleteOrderListMessages(cb.fromChatId);
+          await handleCancelOrder(cb.callbackQueryId, cb.fromChatId);
+        }
       }
 
       await deleteProcessedCallback(cb.updateId);
