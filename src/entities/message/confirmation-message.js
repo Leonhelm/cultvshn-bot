@@ -38,3 +38,20 @@ export async function deleteConfirmationsByTarget(targetChatId) {
   }
   await batch.commit();
 }
+
+export async function getConfirmationByMessage(adminChatId, messageId) {
+  const snapshot = await confirmationsCollection
+    .where("adminChatId", "==", adminChatId)
+    .where("messageId", "==", messageId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return undefined;
+
+  const doc = snapshot.docs[0];
+  return { docId: doc.id };
+}
+
+export async function deleteConfirmationDoc(docId) {
+  await confirmationsCollection.doc(docId).delete();
+}

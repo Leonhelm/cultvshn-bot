@@ -1,6 +1,6 @@
-import { sendMessageWithMarkup, answerCallbackQuery, deleteMessage } from "../../shared/api/index.js";
+import { sendMessageWithMarkup, answerCallbackQuery } from "../../shared/api/index.js";
 import { logInfo } from "../../shared/lib/index.js";
-import { setLastBotMessage, saveOrderListMessage, deleteOrderListMessageByOrder } from "../../entities/message/index.js";
+import { saveTrackedMessage, saveOrderListMessage, deleteOrderListMessageByOrder } from "../../entities/message/index.js";
 import { setChatState } from "../../entities/chat/index.js";
 import { saveOrder, getOrdersByChat, getOrder, deleteOrder } from "../../entities/order/index.js";
 
@@ -41,7 +41,7 @@ export async function showQuickMenu(chatId, textPrefix) {
     : "Выберите действие:";
 
   const sent = await sendMessageWithMarkup(chatId, text, QUICK_MENU_KEYBOARD);
-  await setLastBotMessage(chatId, sent.message_id);
+  await saveTrackedMessage(chatId, sent.message_id);
 }
 
 export async function promptForOrderLink(callbackQueryId, chatId) {
@@ -54,7 +54,7 @@ export async function promptForOrderLink(callbackQueryId, chatId) {
     "Отправьте ссылку на заказ (ozon.ru или wildberries.ru)",
     CANCEL_KEYBOARD,
   );
-  await setLastBotMessage(chatId, sent.message_id);
+  await saveTrackedMessage(chatId, sent.message_id);
 }
 
 export async function handleOrderLink(msg) {
@@ -67,7 +67,7 @@ export async function handleOrderLink(msg) {
       "Отправьте ссылку на заказ (ozon.ru или wildberries.ru)",
       CANCEL_KEYBOARD,
     );
-    await setLastBotMessage(chatId, sent.message_id);
+    await saveTrackedMessage(chatId, sent.message_id);
     return;
   }
 
@@ -80,7 +80,7 @@ export async function handleOrderLink(msg) {
       "Ссылка должна быть с домена ozon.ru или wildberries.ru",
       CANCEL_KEYBOARD,
     );
-    await setLastBotMessage(chatId, sent.message_id);
+    await saveTrackedMessage(chatId, sent.message_id);
     return;
   }
 
@@ -108,13 +108,14 @@ export async function handleListOrders(callbackQueryId, chatId) {
       ],
     });
     await saveOrderListMessage(chatId, sent.message_id, order.orderId);
+    await saveTrackedMessage(chatId, sent.message_id);
   }
 
   await showQuickMenu(chatId);
 }
 
 export async function handleDeleteOrder(callback) {
-  const { callbackQueryId, fromChatId, data, messageId } = callback;
+  const { callbackQueryId, fromChatId, data } = callback;
 
   const match = data.match(/^delete-order:(.+)$/);
   if (!match) return;
@@ -130,7 +131,6 @@ export async function handleDeleteOrder(callback) {
 
   logInfo(`Deleting order ${orderId} for chat ${fromChatId}`);
   await deleteOrder(orderId);
-  if (messageId) await deleteMessage(fromChatId, messageId);
   await deleteOrderListMessageByOrder(orderId);
 }
 

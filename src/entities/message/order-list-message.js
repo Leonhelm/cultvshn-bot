@@ -50,3 +50,20 @@ export async function deleteOrderListMessageByOrder(orderId) {
   }
   await batch.commit();
 }
+
+export async function getOrderListMessageByMessage(chatId, messageId) {
+  const snapshot = await orderListMessagesCollection
+    .where("chatId", "==", chatId)
+    .where("messageId", "==", messageId)
+    .limit(1)
+    .get();
+
+  if (snapshot.empty) return undefined;
+
+  const doc = snapshot.docs[0];
+  return { docId: doc.id };
+}
+
+export async function deleteOrderListMessageDoc(docId) {
+  await orderListMessagesCollection.doc(docId).delete();
+}

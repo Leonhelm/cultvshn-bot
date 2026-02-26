@@ -12,3 +12,8 @@ export declare function saveConfirmationMessage(
 ): Promise<void>;
 export declare function getConfirmationsByTarget(targetChatId: number): Promise<ConfirmationMessage[]>;
 export declare function deleteConfirmationsByTarget(targetChatId: number): Promise<void>;
+export declare function getConfirmationByMessage(
+  adminChatId: number,
+  messageId: number,
+): Promise<{ docId: string } | undefined>;
+export declare function deleteConfirmationDoc(docId: string): Promise<void>;

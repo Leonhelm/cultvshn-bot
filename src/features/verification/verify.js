@@ -1,23 +1,13 @@
-import { sendMessage, sendMessageWithMarkup, answerCallbackQuery, deleteMessage } from "../../shared/api/index.js";
+import { sendMessage, sendMessageWithMarkup, answerCallbackQuery } from "../../shared/api/index.js";
 import { logInfo, logError } from "../../shared/lib/index.js";
 import { formatUserInfo } from "../../entities/user/index.js";
 import { saveChat, getChat, updateChatRole, getChatsByRole } from "../../entities/chat/index.js";
 import {
-  setLastBotMessage,
+  saveTrackedMessage,
   saveConfirmationMessage,
   getConfirmationsByTarget,
   deleteConfirmationsByTarget,
 } from "../../entities/message/index.js";
-
-async function deleteOldConfirmations(targetChatId) {
-  const existing = await getConfirmationsByTarget(targetChatId);
-  for (const conf of existing) {
-    await deleteMessage(conf.adminChatId, conf.messageId);
-  }
-  if (existing.length > 0) {
-    await deleteConfirmationsByTarget(targetChatId);
-  }
-}
 
 export async function handleUnverifiedUser(msg) {
   const chatId = msg.chatId;
@@ -33,10 +23,10 @@ export async function handleUnverifiedUser(msg) {
     username: user.username,
   });
 
-  await deleteOldConfirmations(chatId);
+  await deleteConfirmationsByTarget(chatId);
 
   const sent = await sendMessage(chatId, "Ожидайте подтверждения администратором");
-  await setLastBotMessage(chatId, sent.message_id);
+  await saveTrackedMessage(chatId, sent.message_id);
 
   const admins = await getChatsByRole("admin");
   const userInfo = formatUserInfo(user);
@@ -58,6 +48,7 @@ export async function handleUnverifiedUser(msg) {
         "HTML",
       );
       await saveConfirmationMessage(admin.chatId, adminMsg.message_id, chatId);
+      await saveTrackedMessage(admin.chatId, adminMsg.message_id);
     } catch (error) {
       logError(`Failed to send confirmation to admin ${admin.chatId}`, error);
     }
@@ -113,9 +104,9 @@ export async function handleVerificationCallback(callback) {
     await updateChatRole(targetChatId, "verified");
 
     for (const conf of confirmations) {
-      await deleteMessage(conf.adminChatId, conf.messageId);
       if (conf.adminChatId !== fromChatId) {
-        await sendMessage(conf.adminChatId, `Пользователь ${userInfo} добавлен`);
+        const infoMsg = await sendMessage(conf.adminChatId, `Пользователь ${userInfo} добавлен`);
+        await saveTrackedMessage(conf.adminChatId, infoMsg.message_id);
       }
     }
     await deleteConfirmationsByTarget(targetChatId);
@@ -127,9 +118,9 @@ export async function handleVerificationCallback(callback) {
     logInfo(`Admin ${fromChatId} rejected user ${targetChatId}`);
 
     for (const conf of confirmations) {
-      await deleteMessage(conf.adminChatId, conf.messageId);
       if (conf.adminChatId !== fromChatId) {
-        await sendMessage(conf.adminChatId, `Пользователь ${userInfo} не был добавлен`);
+        const infoMsg = await sendMessage(conf.adminChatId, `Пользователь ${userInfo} не был добавлен`);
+        await saveTrackedMessage(conf.adminChatId, infoMsg.message_id);
       }
     }
     await deleteConfirmationsByTarget(targetChatId);

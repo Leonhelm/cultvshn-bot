@@ -9,3 +9,8 @@ export declare function saveOrderListMessage(chatId: number, messageId: number, 
 export declare function getOrderListMessagesByChat(chatId: number): Promise<OrderListMessage[]>;
 export declare function deleteOrderListMessagesByChat(chatId: number): Promise<void>;
 export declare function deleteOrderListMessageByOrder(orderId: string): Promise<void>;
+export declare function getOrderListMessageByMessage(
+  chatId: number,
+  messageId: number,
+): Promise<{ docId: string } | undefined>;
+export declare function deleteOrderListMessageDoc(docId: string): Promise<void>;

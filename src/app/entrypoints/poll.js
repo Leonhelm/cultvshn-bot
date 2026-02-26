@@ -4,19 +4,16 @@ import { logInfo, logError, maskToken } from "../../shared/lib/index.js";
 import { getOffset, setOffsetBatch, createBatch } from "../../shared/db/index.js";
 import {
   saveIncomingMessageBatch,
+  saveTrackedMessageBatch,
+  saveTrackedMessage,
   getUnprocessedMessages,
   deleteProcessedMessage,
   saveIncomingCallbackBatch,
   getUnprocessedCallbacks,
   deleteProcessedCallback,
-  setLastBotMessage,
 } from "../../entities/message/index.js";
 import { getChat } from "../../entities/chat/index.js";
-import {
-  deletePreviousBotMessage,
-  deleteUserMessage,
-  deleteOrderListMessages,
-} from "../../features/chat-cleanup/index.js";
+import { processExpiredMessages, getChatsNeedingMenu } from "../../features/message-expiry/index.js";
 import { handleUnverifiedUser, handleVerificationCallback } from "../../features/verification/index.js";
 import {
   showQuickMenu,
@@ -50,6 +47,7 @@ async function fetchAndStore() {
   for (const update of updates) {
     if (update.message) {
       saveIncomingMessageBatch(batch, update.update_id, update.message);
+      saveTrackedMessageBatch(batch, update.message.chat.id, update.message.message_id);
     }
     if (update.callback_query) {
       saveIncomingCallbackBatch(batch, update.update_id, update.callback_query);
@@ -68,23 +66,17 @@ async function processMessages() {
     if (!running) break;
 
     try {
-      await deleteUserMessage(msg.chatId, msg.messageId);
-
       const chat = await getChat(msg.chatId);
       const role = chat ? chat.role : "unverified";
 
       if (role === "unverified") {
-        await deletePreviousBotMessage(msg.chatId);
         await handleUnverifiedUser(msg);
       } else {
         const state = chat ? chat.state : null;
 
         if (state === "awaiting-order-link") {
-          await deletePreviousBotMessage(msg.chatId);
           await handleOrderLink(msg);
         } else {
-          await deletePreviousBotMessage(msg.chatId);
-          await deleteOrderListMessages(msg.chatId);
           await showQuickMenu(msg.chatId);
         }
       }
@@ -119,14 +111,12 @@ async function processCallbacks() {
         const result = await handleVerificationCallback(cb);
 
         if (result && result.action === "verify") {
-          await deletePreviousBotMessage(result.targetChatId);
           await showQuickMenu(result.targetChatId);
         }
 
         if (result && result.action === "reject") {
-          await deletePreviousBotMessage(result.targetChatId);
           const sent = await sendMessage(result.targetChatId, "К сожалению, ваш запрос был отклонён");
-          await setLastBotMessage(result.targetChatId, sent.message_id);
+          await saveTrackedMessage(result.targetChatId, sent.message_id);
         }
       } else if (callbackType === "order") {
         const chat = await getChat(cb.fromChatId);
@@ -138,18 +128,12 @@ async function processCallbacks() {
         }
 
         if (cb.data === "add-order") {
-          await deletePreviousBotMessage(cb.fromChatId);
-          await deleteOrderListMessages(cb.fromChatId);
           await promptForOrderLink(cb.callbackQueryId, cb.fromChatId);
         } else if (cb.data === "list-orders") {
-          await deletePreviousBotMessage(cb.fromChatId);
-          await deleteOrderListMessages(cb.fromChatId);
           await handleListOrders(cb.callbackQueryId, cb.fromChatId);
         } else if (cb.data?.startsWith("delete-order:")) {
           await handleDeleteOrder(cb);
         } else if (cb.data === "cancel") {
-          await deletePreviousBotMessage(cb.fromChatId);
-          await deleteOrderListMessages(cb.fromChatId);
           await handleCancelOrder(cb.callbackQueryId, cb.fromChatId);
         }
       }
@@ -157,6 +141,21 @@ async function processCallbacks() {
       await deleteProcessedCallback(cb.updateId);
     } catch (error) {
       logError(`Error processing callback ${cb.updateId}`, error);
+    }
+  }
+}
+
+async function processExpiry() {
+  const affectedChatIds = await processExpiredMessages();
+  if (affectedChatIds.length === 0) return;
+
+  const chatsNeedingMenu = await getChatsNeedingMenu(affectedChatIds);
+  for (const chatId of chatsNeedingMenu) {
+    if (!running) break;
+    try {
+      await showQuickMenu(chatId);
+    } catch (error) {
+      logError(`Error sending menu to empty chat ${chatId}`, error);
     }
   }
 }
@@ -180,6 +179,12 @@ async function pollLoop() {
       await processCallbacks();
     } catch (error) {
       logError("Error processing callbacks", error);
+    }
+
+    try {
+      await processExpiry();
+    } catch (error) {
+      logError("Error processing message expiry", error);
     }
   }
 

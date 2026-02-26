@@ -1,8 +1,10 @@
 export {
-  setLastBotMessage,
-  getLastBotMessage,
-  clearLastBotMessage,
-} from "./last-bot-message.js";
+  saveTrackedMessage,
+  saveTrackedMessageBatch,
+  getExpiredTrackedMessages,
+  deleteTrackedMessages,
+  getTrackedMessageCountByChat,
+} from "./tracked-message.js";
 
 export {
   saveIncomingMessage,
@@ -21,6 +23,8 @@ export {
   saveConfirmationMessage,
   getConfirmationsByTarget,
   deleteConfirmationsByTarget,
+  getConfirmationByMessage,
+  deleteConfirmationDoc,
 } from "./confirmation-message.js";
 
 export {
@@ -28,4 +32,6 @@ export {
   getOrderListMessagesByChat,
   deleteOrderListMessagesByChat,
   deleteOrderListMessageByOrder,
+  getOrderListMessageByMessage,
+  deleteOrderListMessageDoc,
 } from "./order-list-message.js";
