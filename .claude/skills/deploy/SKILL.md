@@ -1,3 +1,9 @@
+---
+description: "Документация по деплою и управлению cultvshn-bot на Keenetic OS 5+"
+disable-model-invocation: false
+user-invocable: true
+---
+
 # Deploy — Keenetic OS 5+
 
 ## Механика deploy.sh

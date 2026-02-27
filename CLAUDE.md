@@ -1,7 +1,9 @@
 # CLAUDE.md
 
 ## ВАЖНО
-- С каждым изменением актуализируй CLAUDE.md (и `.claude/commands/` при необходимости)
+- С каждым изменением актуализируй CLAUDE.md и связанные skills при необходимости:
+  - `/deploy` — деплой и управление сервисом на Keenetic
+  - `/marketplace` — модуль маркетплейсов: структура и расширение
 - Пиши кратко, переиспользуй формулировки, экономь токены
 - При анализе ориентируйся только на CLAUDE.md
 
@@ -25,12 +27,13 @@ src/
 └── shared/                         # Переиспользуемый код
     ├── config/                     # Чтение переменных окружения (dotenv)
     │   └── env.js + env.d.ts
-    └── lib/                        # Утилиты
-        ├── logger.js + logger.d.ts
-        ├── messages.js + messages.d.ts   # Тексты ответов бота
-        ├── marketplace.js + marketplace.d.ts # Парсинг ссылок маркетплейсов
-        ├── telegram.js + telegram.d.ts   # Telegram Bot API (fetch)
-        └── firestore.js + firestore.d.ts # Firestore CRUD
+    ├── lib/                        # Утилиты
+    │   ├── logger.js + logger.d.ts
+    │   ├── messages.js + messages.d.ts   # Тексты ответов бота
+    │   ├── telegram.js + telegram.d.ts   # Telegram Bot API (fetch)
+    │   └── firestore.js + firestore.d.ts # Firestore CRUD
+    └── marketplace/                # Модуль маркетплейсов (skill: /marketplace)
+        └── extract.js + extract.d.ts    # Парсинг ссылок
 ```
 
 ## Переменные окружения
@@ -56,4 +59,4 @@ src/
 - Пробрасывает SIGTERM/SIGINT дочернему процессу. Не перезапускает при exit 0
 
 ## Deploy
-Документация по деплою и управлению сервисом: `/project:deploy`
+Документация по деплою и управлению сервисом: `/deploy`
