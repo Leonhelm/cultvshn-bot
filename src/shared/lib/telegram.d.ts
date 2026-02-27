@@ -5,11 +5,19 @@ export interface TgUser {
   username?: string;
 }
 
+export interface TgMessageEntity {
+  type: string;
+  offset: number;
+  length: number;
+  url?: string;
+}
+
 export interface TgMessage {
   message_id: number;
   chat: { id: number };
   from?: TgUser;
   text?: string;
+  entities?: TgMessageEntity[];
   date: number;
 }
 

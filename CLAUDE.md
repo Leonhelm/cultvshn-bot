@@ -28,6 +28,7 @@ src/
     └── lib/                        # Утилиты
         ├── logger.js + logger.d.ts
         ├── messages.js + messages.d.ts   # Тексты ответов бота
+        ├── marketplace.js + marketplace.d.ts # Парсинг ссылок маркетплейсов
         ├── telegram.js + telegram.d.ts   # Telegram Bot API (fetch)
         └── firestore.js + firestore.d.ts # Firestore CRUD
 ```
@@ -39,8 +40,10 @@ src/
 
 ## Firestore — коллекции
 - `chats/{chatId}`: `firstName, lastName?, username?, role ('unverified'|'verified'|'admin'), state?, createdAt, updatedAt`
+- `links/{chatId}_{messageId}`: `url, chatId, createdAt`
 
 ## Поведение сообщений (реализовано в poll.js)
+- verified/admin + ссылка ozon.ru/wildberries.ru → сохранение в links/{chatId}_{messageId}, ответ «Ссылка сохранена!»
 - verified/admin → «Доступные команды:\n/list»
 - verified/admin + `/list` → «Ты нажал на /list – молодец»
 - unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}

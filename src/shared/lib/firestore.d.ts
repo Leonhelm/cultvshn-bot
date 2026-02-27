@@ -10,7 +10,19 @@ export interface ChatDoc {
   updatedAt: Timestamp;
 }
 
+export interface LinkDoc {
+  url: string;
+  chatId: string;
+  createdAt: Timestamp;
+}
+
 export function getChat(chatId: string): Promise<ChatDoc | null>;
+
+export function saveLink(
+  chatId: string,
+  messageId: number,
+  url: string,
+): Promise<void>;
 
 export function upsertUnverifiedChat(
   chatId: string,
