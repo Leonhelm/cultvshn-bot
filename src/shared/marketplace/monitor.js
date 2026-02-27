@@ -4,7 +4,6 @@ import { parseMarketplace } from "./parser.js";
 
 const INTERVAL_MS = 30 * 60 * 1000;
 
-/** @param {{ id: string, url: string }} link */
 async function checkLink(link) {
   try {
     const result = await parseMarketplace(link.url);

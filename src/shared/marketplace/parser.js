@@ -2,10 +2,6 @@ import { getMarketplaceType } from "./extract.js";
 
 const TIMEOUT_MS = 15_000;
 
-/**
- * @param {string} url
- * @returns {Promise<{name: string, price: number} | null>}
- */
 async function parseWildberries(url) {
   const match = url.match(/\/catalog\/(\d+)\//);
   if (!match) return null;
@@ -29,10 +25,6 @@ async function parseWildberries(url) {
   return { name, price };
 }
 
-/**
- * @param {string} url
- * @returns {Promise<{name: string, price: number} | null>}
- */
 async function parseOzon(url) {
   const res = await fetch(url, {
     redirect: "follow",
@@ -115,10 +107,6 @@ async function parseOzon(url) {
   return null;
 }
 
-/**
- * @param {string} url
- * @returns {Promise<{name: string, price: number} | null>}
- */
 export async function parseMarketplace(url) {
   const type = getMarketplaceType(url);
   if (type === "wildberries") return parseWildberries(url);
