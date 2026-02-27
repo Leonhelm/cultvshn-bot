@@ -9,20 +9,11 @@ const app = initializeApp({
 const db = getFirestore(app);
 const chatsCol = db.collection("chats");
 
-/**
- * @param {string} chatId
- * @returns {Promise<import("./firestore").ChatDoc | null>}
- */
 export async function getChat(chatId) {
   const snap = await chatsCol.doc(chatId).get();
-  return snap.exists ? /** @type {any} */ (snap.data()) : null;
+  return snap.exists ? (snap.data()) : null;
 }
 
-/**
- * @param {string} chatId
- * @param {{ firstName: string; lastName?: string; username?: string }} info
- * @returns {Promise<void>}
- */
 export async function upsertUnverifiedChat(chatId, info) {
   const ref = chatsCol.doc(chatId);
   const snap = await ref.get();

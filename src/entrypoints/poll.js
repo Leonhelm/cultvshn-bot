@@ -18,14 +18,8 @@ function shutdown(signal) {
 process.on("SIGTERM", () => shutdown("SIGTERM"));
 process.on("SIGINT", () => shutdown("SIGINT"));
 
-/** @type {Map<number, { botMsgId?: number; userMsgId?: number }>} */
 const lastMessages = new Map();
 
-/**
- * @param {number} chatId
- * @param {number} messageId
- * @param {'bot' | 'user'} kind
- */
 async function trackAndDeletePrevious(chatId, messageId, kind) {
   const entry = lastMessages.get(chatId) ?? {};
   const key = kind === "bot" ? "botMsgId" : "userMsgId";
@@ -39,9 +33,6 @@ async function trackAndDeletePrevious(chatId, messageId, kind) {
   lastMessages.set(chatId, entry);
 }
 
-/**
- * @param {import("../shared/lib/telegram").TgMessage} msg
- */
 async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const from = msg.from;
