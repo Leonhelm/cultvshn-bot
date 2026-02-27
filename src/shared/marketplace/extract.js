@@ -53,3 +53,18 @@ export function extractMarketplaceLink(text, entities) {
 
   return null;
 }
+
+/**
+ * @param {string} urlStr
+ * @returns {'ozon' | 'wildberries' | null}
+ */
+export function getMarketplaceType(urlStr) {
+  try {
+    const { hostname } = new URL(urlStr);
+    if (hostname === "ozon.ru" || hostname.endsWith(".ozon.ru")) return "ozon";
+    if (hostname === "wildberries.ru" || hostname.endsWith(".wildberries.ru")) return "wildberries";
+    return null;
+  } catch {
+    return null;
+  }
+}

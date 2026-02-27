@@ -38,8 +38,20 @@ export async function deleteLink(docId) {
   await linksCol.doc(docId).delete();
 }
 
-export async function updateLinkCheckedAt(docId) {
-  await linksCol.doc(docId).update({ checkedAt: FieldValue.serverTimestamp() });
+/**
+ * @param {string} docId
+ * @param {{ name?: string, price?: number, invalidAt?: boolean }} data
+ */
+export async function updateLinkData(docId, data) {
+  /** @type {Record<string, unknown>} */
+  const update = { checkedAt: FieldValue.serverTimestamp() };
+  if (data.name !== undefined) update.name = data.name;
+  if (data.price !== undefined) update.price = data.price;
+  update.invalidAt =
+    data.invalidAt === true
+      ? FieldValue.serverTimestamp()
+      : FieldValue.delete();
+  await linksCol.doc(docId).update(update);
 }
 
 export async function upsertUnverifiedChat(chatId, info) {

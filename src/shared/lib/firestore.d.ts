@@ -15,6 +15,9 @@ export interface LinkDoc {
   chatId: string;
   createdAt: Timestamp;
   checkedAt?: Timestamp;
+  name?: string;
+  price?: number;
+  invalidAt?: Timestamp;
 }
 
 export interface LinkDocWithId extends LinkDoc {
@@ -35,7 +38,10 @@ export function getLink(docId: string): Promise<LinkDocWithId | null>;
 
 export function deleteLink(docId: string): Promise<void>;
 
-export function updateLinkCheckedAt(docId: string): Promise<void>;
+export function updateLinkData(
+  docId: string,
+  data: { name?: string; price?: number; invalidAt?: boolean },
+): Promise<void>;
 
 export function upsertUnverifiedChat(
   chatId: string,
