@@ -1,23 +1,30 @@
-import { listLinks, updateLinkCheckedAt } from "../lib/firestore.js";
+import { listLinks, updateLinkData } from "../lib/firestore.js";
 import { logInfo, logError } from "../lib/logger.js";
+import { parseMarketplace } from "./parser.js";
 
 const INTERVAL_MS = 30 * 60 * 1000;
 
-/** @param {{ id: string, url: string }} link */
 async function checkLink(link) {
   try {
-    const res = await fetch(link.url, {
-      method: "HEAD",
-      signal: AbortSignal.timeout(10_000),
-    });
-    if (res.ok) {
-      await updateLinkCheckedAt(link.id);
-      logInfo(`Monitor: link ${link.id} OK (${res.status})`);
+    const result = await parseMarketplace(link.url);
+    if (result) {
+      await updateLinkData(link.id, {
+        name: result.name,
+        price: result.price,
+        invalidAt: false,
+      });
+      logInfo(`Monitor: link ${link.id} OK — ${result.name} @ ${result.price}`);
     } else {
-      logInfo(`Monitor: link ${link.id} returned ${res.status}`);
+      await updateLinkData(link.id, { invalidAt: true });
+      logInfo(`Monitor: link ${link.id} parse failed → invalidAt`);
     }
   } catch (err) {
-    logError(`Monitor: link ${link.id} failed`, err);
+    logError(`Monitor: link ${link.id} error`, err);
+    try {
+      await updateLinkData(link.id, { invalidAt: true });
+    } catch (fsErr) {
+      logError(`Monitor: link ${link.id} failed to write invalidAt`, fsErr);
+    }
   }
 }
 

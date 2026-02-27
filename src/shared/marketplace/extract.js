@@ -1,13 +1,11 @@
 const MARKETPLACE_HOSTS = ["ozon.ru", "wildberries.ru"];
 
-/** @param {string} hostname */
 function isMarketplaceHost(hostname) {
   return MARKETPLACE_HOSTS.some(
     (h) => hostname === h || hostname.endsWith(`.${h}`),
   );
 }
 
-/** @param {string} urlStr */
 function isMarketplaceUrl(urlStr) {
   try {
     const u = new URL(urlStr);
@@ -20,13 +18,7 @@ function isMarketplaceUrl(urlStr) {
   }
 }
 
-/**
- * Extract the first marketplace URL from a Telegram message.
- * Checks entities first (most reliable), then falls back to regex.
- * @param {string | undefined} text
- * @param {Array<{type: string, offset: number, length: number, url?: string}> | undefined} entities
- * @returns {string | null}
- */
+// Checks entities first (most reliable), then falls back to regex.
 export function extractMarketplaceLink(text, entities) {
   if (text && entities) {
     for (const e of entities) {
@@ -52,4 +44,15 @@ export function extractMarketplaceLink(text, entities) {
   }
 
   return null;
+}
+
+export function getMarketplaceType(urlStr) {
+  try {
+    const { hostname } = new URL(urlStr);
+    if (hostname === "ozon.ru" || hostname.endsWith(".ozon.ru")) return "ozon";
+    if (hostname === "wildberries.ru" || hostname.endsWith(".wildberries.ru")) return "wildberries";
+    return null;
+  } catch {
+    return null;
+  }
 }
