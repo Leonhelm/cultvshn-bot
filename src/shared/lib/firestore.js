@@ -38,6 +38,10 @@ export async function deleteLink(docId) {
   await linksCol.doc(docId).delete();
 }
 
+export async function updateLinkCheckedAt(docId) {
+  await linksCol.doc(docId).update({ checkedAt: FieldValue.serverTimestamp() });
+}
+
 export async function upsertUnverifiedChat(chatId, info) {
   const ref = chatsCol.doc(chatId);
   const snap = await ref.get();
