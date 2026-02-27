@@ -58,7 +58,7 @@ async function handleMessage(msg) {
     } else if (msg.text?.startsWith("/mp_view_")) {
       const docId = msg.text.slice("/mp_view_".length);
       const link = await getLink(docId);
-      text = link ? link.url : MSG_LINK_NOT_FOUND;
+      text = link ? `${link.url}\n\n${MSG_COMMANDS}` : MSG_LINK_NOT_FOUND;
     } else if (msg.text?.startsWith("/mp_delete_")) {
       const docId = msg.text.slice("/mp_delete_".length);
       const link = await getLink(docId);
