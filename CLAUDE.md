@@ -1,7 +1,7 @@
 # CLAUDE.md
 
 ## ВАЖНО
-- С каждым изменением актуализируй CLAUDE.md
+- С каждым изменением актуализируй CLAUDE.md (и `.claude/commands/` при необходимости)
 - Пиши кратко, переиспользуй формулировки, экономь токены
 - При анализе ориентируйся только на CLAUDE.md
 
@@ -52,43 +52,5 @@ src/
 - Exponential backoff: 1s → 2s → 4s … cap 60s; сброс при стабильной работе
 - Пробрасывает SIGTERM/SIGINT дочернему процессу. Не перезапускает при exit 0
 
-## Deploy (Keenetic, кратко)
-- `deploy.sh`: скачивает zip main, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon`
-- Обновление: каждые 60 мин проверка SHA; при ошибке — откат из `.old`. SHA сохраняется только после успешного деплоя
-- Layout: базовая директория содержит по умолчанию `.env`, `cultvshn-bot-main/`
-
-### Первоначальная установка (одноразово)
-
-```
-# 1. Создать базовую директорию
-mkdir -p /tmp/mnt/181ADB641ADB3E06/projects/cultvshn
-
-# 2. Создать .env с секретами
-cat > /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/.env << 'EOF'
-TG_BOT_API_TOKEN=...
-FIREBASE_SERVICE_ACCOUNT_JSON=...
-EOF
-
-# 3. Скачать deploy.sh
-curl -sL -o /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/deploy.sh \
-  "https://raw.githubusercontent.com/Leonhelm/cultvshn-bot/main/scripts/deploy.sh"
-chmod +x /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/deploy.sh
-
-# 4. Установить init.d скрипт
-curl -sL -o /opt/etc/init.d/S99cultvshn-bot \
-  "https://raw.githubusercontent.com/Leonhelm/cultvshn-bot/main/scripts/init.d/S99cultvshn-bot"
-chmod +x /opt/etc/init.d/S99cultvshn-bot
-
-# 5. Запустить
-/opt/etc/init.d/S99cultvshn-bot start
-```
-
-### Управление
-
-```
-/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + daemon
-/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + daemon
-/opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск
-/opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса (deploy + bot)
-tail -f /opt/var/log/cultvshn-bot.log    # Логи бота и deploy-скрипта
-```
+## Deploy
+Документация по деплою и управлению сервисом: `/project:deploy`
