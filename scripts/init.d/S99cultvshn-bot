@@ -49,7 +49,7 @@ stop() {
         bot_pid=$(cat "$BOT_PID_FILE")
         if kill -0 "$bot_pid" 2>/dev/null; then
             echo "Stopping bot daemon (PID $bot_pid)..."
-            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/app/entrypoints/poll-daemon.js stop 2>&1
+            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/poll-daemon.js stop 2>&1
             sleep 3
             if kill -0 "$bot_pid" 2>/dev/null; then
                 kill -9 "$bot_pid" 2>/dev/null

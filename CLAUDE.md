@@ -20,13 +20,16 @@
 scripts/                            # Скрипты по запуску и обновлению cultvshn-bot на Keenetic OS 5+
 src/
 ├── entrypoints/                    # Точки входа
-│   ├── poll.js                     # Long polling (Keenetic OS 5)
+│   ├── poll.js                     # Long polling + обработка сообщений
 │   └── poll-daemon.js              # Daemon-supervisor для poll.js
 └── shared/                         # Переиспользуемый код
     ├── config/                     # Чтение переменных окружения (dotenv)
-    │   ├── env.js + env.d.ts
+    │   ├── index.js + index.d.ts   # Re-export env
+    │   └── env.js + env.d.ts
     └── lib/                        # Утилиты
-        └── logger.js + logger.d.ts
+        ├── logger.js + logger.d.ts
+        ├── telegram.js + telegram.d.ts   # Telegram Bot API (fetch)
+        └── firestore.js + firestore.d.ts # Firestore CRUD
 ```
 
 ## Переменные окружения
@@ -37,10 +40,10 @@ src/
 ## Firestore — коллекции
 - `chats/{chatId}`: `firstName, lastName?, username?, role ('unverified'|'verified'|'admin'), state?, createdAt, updatedAt`
 
-## TTL и поведение сообщений
-- Если пользователь verified или admin - пишем ему кликабельный список команд: /list
-- Если пользователь unverified - пишем ему тебя скоро добавят и добавляем его в Firestore в chats/{chatId}
-- Предыдущие сообщения бота и пользователя удаляем, оставляем только последнее от бота или пользователя
+## Поведение сообщений (реализовано в poll.js)
+- verified/admin → «Доступные команды:\n/list»
+- unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}
+- Предыдущие сообщения бота и пользователя удаляем (in-memory Map по chatId), оставляем только последнее
 
 ## poll-daemon (supervisor)
 - Запускает `poll.js` как child, перезапускает при аварийном exit (code ≠ 0)
