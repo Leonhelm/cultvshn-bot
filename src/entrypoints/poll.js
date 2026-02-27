@@ -8,6 +8,7 @@ import {
 import { getChat, upsertUnverifiedChat, saveLink, listLinks, getLink, deleteLink } from "../shared/lib/firestore.js";
 import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_DELETED, MSG_LINK_NOT_FOUND, msgList } from "../shared/lib/messages.js";
 import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
+import { startMarketplaceMonitor } from "../shared/marketplace/monitor.js";
 
 let running = true;
 
@@ -116,4 +117,5 @@ async function pollLoop() {
 
 logInfo(`Bot started (poll mode), token: ${maskToken(env.TG_BOT_API_TOKEN)}`);
 
+startMarketplaceMonitor();
 await pollLoop();
