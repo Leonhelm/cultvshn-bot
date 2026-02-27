@@ -1,4 +1,4 @@
-import { env } from "../config/index.js";
+import { env } from "../config/env.js";
 import { logError } from "./logger.js";
 
 const BASE_URL = `https://api.telegram.org/bot${env.TG_BOT_API_TOKEN}`;
@@ -29,7 +29,8 @@ async function callApi(method, body) {
  * @param {number} timeout
  * @returns {Promise<Array<import("./telegram").TgUpdate>>}
  */
-export function getUpdates(offset, timeout = 25) {
+// не больше 10с — ограничение fetch в Node.js 18
+export function getUpdates(offset, timeout = 8) {
   return callApi("getUpdates", {
     offset,
     timeout,

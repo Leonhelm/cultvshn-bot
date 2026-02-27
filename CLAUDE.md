@@ -24,10 +24,10 @@ src/
 │   └── poll-daemon.js              # Daemon-supervisor для poll.js
 └── shared/                         # Переиспользуемый код
     ├── config/                     # Чтение переменных окружения (dotenv)
-    │   ├── index.js + index.d.ts   # Re-export env
     │   └── env.js + env.d.ts
     └── lib/                        # Утилиты
         ├── logger.js + logger.d.ts
+        ├── messages.js + messages.d.ts   # Тексты ответов бота
         ├── telegram.js + telegram.d.ts   # Telegram Bot API (fetch)
         └── firestore.js + firestore.d.ts # Firestore CRUD
 ```
@@ -42,7 +42,9 @@ src/
 
 ## Поведение сообщений (реализовано в poll.js)
 - verified/admin → «Доступные команды:\n/list»
+- verified/admin + `/list` → «Та нажал на /list – молодец»
 - unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}
+- Тексты ответов — `messages.js`
 - Предыдущие сообщения бота и пользователя удаляем (in-memory Map по chatId), оставляем только последнее
 
 ## poll-daemon (supervisor)

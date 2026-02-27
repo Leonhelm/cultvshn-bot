@@ -1,4 +1,4 @@
-import { env } from "../shared/config/index.js";
+import { env } from "../shared/config/env.js";
 import { logInfo, logError, maskToken } from "../shared/lib/logger.js";
 import {
   getUpdates,
@@ -6,6 +6,7 @@ import {
   deleteMessage,
 } from "../shared/lib/telegram.js";
 import { getChat, upsertUnverifiedChat } from "../shared/lib/firestore.js";
+import { MSG_COMMANDS, MSG_LIST, MSG_UNVERIFIED } from "../shared/lib/messages.js";
 
 let running = true;
 
@@ -52,10 +53,8 @@ async function handleMessage(msg) {
   const role = chatDoc?.role;
 
   if (role === "verified" || role === "admin") {
-    const sent = await sendMessage(
-      chatId,
-      "Доступные команды:\n/list",
-    );
+    const text = msg.text === "/list" ? MSG_LIST : MSG_COMMANDS;
+    const sent = await sendMessage(chatId, text);
     await trackAndDeletePrevious(chatId, sent.message_id, "bot");
   } else {
     await upsertUnverifiedChat(String(chatId), {
@@ -64,10 +63,7 @@ async function handleMessage(msg) {
       username: from.username,
     });
 
-    const sent = await sendMessage(
-      chatId,
-      "Тебя скоро добавят, подожди немного.",
-    );
+    const sent = await sendMessage(chatId, MSG_UNVERIFIED);
     await trackAndDeletePrevious(chatId, sent.message_id, "bot");
   }
 }

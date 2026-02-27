@@ -1,6 +1,6 @@
 import { initializeApp, cert } from "firebase-admin/app";
 import { getFirestore, FieldValue } from "firebase-admin/firestore";
-import { env } from "../config/index.js";
+import { env } from "../config/env.js";
 
 const app = initializeApp({
   credential: cert(JSON.parse(env.FIREBASE_SERVICE_ACCOUNT_JSON)),
