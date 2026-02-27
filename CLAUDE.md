@@ -42,7 +42,7 @@ src/
 
 ## Поведение сообщений (реализовано в poll.js)
 - verified/admin → «Доступные команды:\n/list»
-- verified/admin + `/list` → «Та нажал на /list – молодец»
+- verified/admin + `/list` → «Ты нажал на /list – молодец»
 - unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}
 - Тексты ответов — `messages.js`
 - Предыдущие сообщения бота и пользователя удаляем (in-memory Map по chatId), оставляем только последнее
