@@ -72,7 +72,7 @@ stop_bot() {
 
     log_msg "Stopping daemon (PID $pid)..."
     cd "$PROJECT_DIR" || return 1
-    "$NODE_BIN" src/app/entrypoints/poll-daemon.js stop 2>&1
+    "$NODE_BIN" src/entrypoints/poll-daemon.js stop 2>&1
 
     i=0
     while [ "$i" -lt 20 ]; do
@@ -94,7 +94,7 @@ stop_bot() {
 start_bot() {
     cd "$PROJECT_DIR" || return 1
     log_msg "Starting poll-daemon..."
-    "$NODE_BIN" src/app/entrypoints/poll-daemon.js >> "$BOT_LOG" 2>&1 &
+    "$NODE_BIN" src/entrypoints/poll-daemon.js >> "$BOT_LOG" 2>&1 &
     sleep 2
 
     if [ -f "poll-daemon.pid" ] && kill -0 "$(cat poll-daemon.pid)" 2>/dev/null; then
