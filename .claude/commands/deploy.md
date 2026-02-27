@@ -2,7 +2,7 @@
 
 ## Механика deploy.sh
 - Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon`
-- Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop → deploy → start; при ошибке — откат из `.old`
+- Каждые 5 мин проверяет SHA через GitHub API; при изменении — stop → deploy → start; при ошибке — откат из `.old`
 - SHA сохраняется только после успешного деплоя
 - Layout: базовая директория содержит `.env`, `cultvshn-bot-main/`, `deploy.pid`
 - Базовая директория: `/tmp/mnt/181ADB641ADB3E06/projects/cultvshn`
