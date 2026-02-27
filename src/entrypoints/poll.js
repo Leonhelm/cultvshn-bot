@@ -7,7 +7,7 @@ import {
 } from "../shared/lib/telegram.js";
 import { getChat, upsertUnverifiedChat, saveLink } from "../shared/lib/firestore.js";
 import { MSG_COMMANDS, MSG_LIST, MSG_UNVERIFIED, MSG_LINK_SAVED } from "../shared/lib/messages.js";
-import { extractMarketplaceLink } from "../shared/lib/marketplace.js";
+import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
 
 let running = true;
 
