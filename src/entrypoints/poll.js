@@ -5,8 +5,9 @@ import {
   sendMessage,
   deleteMessage,
 } from "../shared/lib/telegram.js";
-import { getChat, upsertUnverifiedChat } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_LIST, MSG_UNVERIFIED } from "../shared/lib/messages.js";
+import { getChat, upsertUnverifiedChat, saveLink } from "../shared/lib/firestore.js";
+import { MSG_COMMANDS, MSG_LIST, MSG_UNVERIFIED, MSG_LINK_SAVED } from "../shared/lib/messages.js";
+import { extractMarketplaceLink } from "../shared/lib/marketplace.js";
 
 let running = true;
 
@@ -44,7 +45,18 @@ async function handleMessage(msg) {
   const role = chatDoc?.role;
 
   if (role === "verified" || role === "admin") {
-    const text = msg.text === "/list" ? MSG_LIST : MSG_COMMANDS;
+    const marketplaceUrl = extractMarketplaceLink(msg.text, msg.entities);
+
+    let text;
+    if (marketplaceUrl) {
+      await saveLink(String(chatId), msg.message_id, marketplaceUrl);
+      text = MSG_LINK_SAVED;
+    } else if (msg.text === "/list") {
+      text = MSG_LIST;
+    } else {
+      text = MSG_COMMANDS;
+    }
+
     const sent = await sendMessage(chatId, text);
     await trackAndDeletePrevious(chatId, sent.message_id, "bot");
   } else {

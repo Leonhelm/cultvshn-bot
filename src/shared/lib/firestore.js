@@ -8,10 +8,20 @@ const app = initializeApp({
 
 const db = getFirestore(app);
 const chatsCol = db.collection("chats");
+const linksCol = db.collection("links");
 
 export async function getChat(chatId) {
   const snap = await chatsCol.doc(chatId).get();
   return snap.exists ? (snap.data()) : null;
+}
+
+export async function saveLink(chatId, messageId, url) {
+  const docId = `${chatId}_${messageId}`;
+  await linksCol.doc(docId).set({
+    url,
+    chatId: String(chatId),
+    createdAt: FieldValue.serverTimestamp(),
+  });
 }
 
 export async function upsertUnverifiedChat(chatId, info) {
