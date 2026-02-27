@@ -46,12 +46,15 @@ src/
 - `links/{chatId}_{messageId}`: `url, chatId, createdAt`
 
 ## Поведение сообщений (реализовано в poll.js)
-- verified/admin + ссылка ozon.ru/wildberries.ru → сохранение в links/{chatId}_{messageId}, ответ «Ссылка сохранена!»
-- verified/admin → «Доступные команды:\n/list»
-- verified/admin + `/list` → «Ты нажал на /list – молодец»
+- verified/admin + ссылка маркетплейса → сохранение, ответ «Ссылка сохранена!»
+- verified/admin + `/list` → список ссылок с `/mp_view_{id}` и `/mp_delete_{id}`
+- verified/admin + `/mp_view_{id}` → URL ссылки или «Ссылка не найдена.»
+- verified/admin + `/mp_delete_{id}` → удаление ссылки или «Ссылка не найдена.»
+- verified/admin (прочее) → «Доступные команды:\n/list»
 - unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}
 - Тексты ответов — `messages.js`
 - Предыдущие сообщения бота и пользователя удаляем (in-memory Map по chatId), оставляем только последнее
+- Логика маркетплейсов: `/marketplace`
 
 ## poll-daemon (supervisor)
 - Запускает `poll.js` как child, перезапускает при аварийном exit (code ≠ 0)

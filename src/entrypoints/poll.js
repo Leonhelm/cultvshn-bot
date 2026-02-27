@@ -5,8 +5,8 @@ import {
   sendMessage,
   deleteMessage,
 } from "../shared/lib/telegram.js";
-import { getChat, upsertUnverifiedChat, saveLink } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_LIST, MSG_UNVERIFIED, MSG_LINK_SAVED } from "../shared/lib/messages.js";
+import { getChat, upsertUnverifiedChat, saveLink, listLinks, getLink, deleteLink } from "../shared/lib/firestore.js";
+import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_DELETED, MSG_LINK_NOT_FOUND, msgList } from "../shared/lib/messages.js";
 import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
 
 let running = true;
@@ -52,7 +52,21 @@ async function handleMessage(msg) {
       await saveLink(String(chatId), msg.message_id, marketplaceUrl);
       text = MSG_LINK_SAVED;
     } else if (msg.text === "/list") {
-      text = MSG_LIST;
+      const links = await listLinks();
+      text = msgList(links);
+    } else if (msg.text?.startsWith("/mp_view_")) {
+      const docId = msg.text.slice("/mp_view_".length);
+      const link = await getLink(docId);
+      text = link ? link.url : MSG_LINK_NOT_FOUND;
+    } else if (msg.text?.startsWith("/mp_delete_")) {
+      const docId = msg.text.slice("/mp_delete_".length);
+      const link = await getLink(docId);
+      if (link) {
+        await deleteLink(docId);
+        text = MSG_LINK_DELETED;
+      } else {
+        text = MSG_LINK_NOT_FOUND;
+      }
     } else {
       text = MSG_COMMANDS;
     }
