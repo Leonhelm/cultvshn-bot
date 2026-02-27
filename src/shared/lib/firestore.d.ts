@@ -16,6 +16,10 @@ export interface LinkDoc {
   createdAt: Timestamp;
 }
 
+export interface LinkDocWithId extends LinkDoc {
+  id: string;
+}
+
 export function getChat(chatId: string): Promise<ChatDoc | null>;
 
 export function saveLink(
@@ -23,6 +27,12 @@ export function saveLink(
   messageId: number,
   url: string,
 ): Promise<void>;
+
+export function listLinks(): Promise<LinkDocWithId[]>;
+
+export function getLink(docId: string): Promise<LinkDocWithId | null>;
+
+export function deleteLink(docId: string): Promise<void>;
 
 export function upsertUnverifiedChat(
   chatId: string,
