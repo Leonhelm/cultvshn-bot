@@ -8,7 +8,7 @@ import {
   editMessageText,
 } from "../shared/lib/telegram.js";
 import { getChat, upsertUnverifiedChat, saveLink, listLinks, getLink, deleteLink } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_DELETED, MSG_LINK_NOT_FOUND, MSG_INFO, msgList } from "../shared/lib/messages.js";
+import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_NOT_FOUND, MSG_INFO, msgList } from "../shared/lib/messages.js";
 import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
 import { startMarketplaceMonitor } from "../shared/marketplace/monitor.js";
 
@@ -61,19 +61,6 @@ async function handleMessage(msg) {
       const result = msgList(links);
       text = result.text;
       if (result.reply_markup) extra = { reply_markup: result.reply_markup };
-    } else if (msg.text?.startsWith("/mp_view_")) {
-      const docId = msg.text.slice("/mp_view_".length);
-      const link = await getLink(docId);
-      text = link ? `${link.url}\n\n${MSG_COMMANDS}` : MSG_LINK_NOT_FOUND;
-    } else if (msg.text?.startsWith("/mp_delete_")) {
-      const docId = msg.text.slice("/mp_delete_".length);
-      const link = await getLink(docId);
-      if (link) {
-        await deleteLink(docId);
-        text = MSG_LINK_DELETED;
-      } else {
-        text = MSG_LINK_NOT_FOUND;
-      }
     } else if (msg.text === "/info") {
       text = MSG_INFO;
     } else {
