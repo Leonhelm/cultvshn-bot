@@ -24,12 +24,27 @@ export function getUpdates(offset, timeout = 8) {
   return callApi("getUpdates", {
     offset,
     timeout,
-    allowed_updates: ["message"],
+    allowed_updates: ["message", "callback_query"],
   });
 }
 
 export function sendMessage(chatId, text, extra) {
   return callApi("sendMessage", { chat_id: chatId, text, ...extra });
+}
+
+export function answerCallbackQuery(callbackQueryId, text) {
+  const body = { callback_query_id: callbackQueryId };
+  if (text) body.text = text;
+  return callApi("answerCallbackQuery", body);
+}
+
+export function editMessageText(chatId, messageId, text, extra) {
+  return callApi("editMessageText", {
+    chat_id: chatId,
+    message_id: messageId,
+    text,
+    ...extra,
+  });
 }
 
 export async function deleteMessage(chatId, messageId) {
