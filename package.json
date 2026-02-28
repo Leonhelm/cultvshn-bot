@@ -6,6 +6,7 @@
     "start:poll": "node src/entrypoints/poll.js",
     "start:poll-daemon": "node src/entrypoints/poll-daemon.js",
     "stop:poll-daemon": "node src/entrypoints/poll-daemon.js stop",
+    "check:links": "node src/entrypoints/check.js",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
