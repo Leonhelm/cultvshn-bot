@@ -118,6 +118,13 @@ function startDaemon() {
 
     if (child) {
       child.kill(signal);
+
+      setTimeout(() => {
+        if (child) {
+          logInfo("Daemon: child did not exit in time, sending SIGKILL");
+          child.kill("SIGKILL");
+        }
+      }, STOP_TIMEOUT_MS).unref();
     } else {
       cleanup();
       process.exit(0);

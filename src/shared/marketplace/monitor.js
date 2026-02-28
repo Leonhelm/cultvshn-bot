@@ -41,5 +41,6 @@ async function runCheck() {
 export function startMarketplaceMonitor() {
   logInfo("Monitor: started (interval 30m)");
   runCheck();
-  setInterval(runCheck, INTERVAL_MS);
+  const id = setInterval(runCheck, INTERVAL_MS);
+  return () => clearInterval(id);
 }
