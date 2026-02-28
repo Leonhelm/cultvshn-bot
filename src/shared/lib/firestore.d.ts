@@ -32,6 +32,8 @@ export function saveLink(
   url: string,
 ): Promise<void>;
 
+export function countLinksByChat(chatId: string): Promise<number>;
+
 export function listLinks(): Promise<LinkDocWithId[]>;
 
 export function getLink(docId: string): Promise<LinkDocWithId | null>;

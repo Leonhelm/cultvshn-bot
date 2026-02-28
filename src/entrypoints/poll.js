@@ -7,8 +7,8 @@ import {
   answerCallbackQuery,
   editMessageText,
 } from "../shared/lib/telegram.js";
-import { getChat, upsertUnverifiedChat, saveLink, listLinks, getLink, deleteLink, terminateFirestore } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_NOT_FOUND, MSG_INFO, msgList } from "../shared/lib/messages.js";
+import { getChat, upsertUnverifiedChat, saveLink, countLinksByChat, listLinks, getLink, deleteLink, terminateFirestore } from "../shared/lib/firestore.js";
+import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_LIMIT, MSG_LINK_NOT_FOUND, MSG_INFO, msgList } from "../shared/lib/messages.js";
 import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
 
 let running = true;
@@ -53,8 +53,13 @@ async function handleMessage(msg) {
     let extra;
 
     if (marketplaceUrl) {
-      await saveLink(String(chatId), msg.message_id, marketplaceUrl);
-      text = MSG_LINK_SAVED;
+      const count = await countLinksByChat(String(chatId));
+      if (count >= 10) {
+        text = MSG_LINK_LIMIT;
+      } else {
+        await saveLink(String(chatId), msg.message_id, marketplaceUrl);
+        text = MSG_LINK_SAVED;
+      }
     } else if (msg.text === "/list") {
       const links = await listLinks();
       const result = msgList(links);
