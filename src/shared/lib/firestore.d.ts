@@ -43,6 +43,8 @@ export function updateLinkData(
   data: { name?: string; price?: number; invalidAt?: boolean },
 ): Promise<void>;
 
+export function terminateFirestore(): Promise<void>;
+
 export function upsertUnverifiedChat(
   chatId: string,
   info: { firstName: string; lastName?: string; username?: string },

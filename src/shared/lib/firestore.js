@@ -48,6 +48,10 @@ export async function updateLinkData(docId, data) {
   });
 }
 
+export async function terminateFirestore() {
+  await app.delete();
+}
+
 export async function upsertUnverifiedChat(chatId, info) {
   const ref = chatsCol.doc(chatId);
   const snap = await ref.get();

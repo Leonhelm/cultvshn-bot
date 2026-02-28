@@ -1,1 +1,1 @@
-export function startMarketplaceMonitor(): void;
+export function startMarketplaceMonitor(): () => void;
