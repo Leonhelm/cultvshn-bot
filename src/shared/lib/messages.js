@@ -5,7 +5,8 @@ export const MSG_LINK_SAVED = `Ссылка сохранена!\n\n${MSG_COMMAND
 export const MSG_LINK_DELETED = `Ссылка удалена!\n\n${MSG_COMMANDS}`;
 export const MSG_LINK_NOT_FOUND = `Ссылка не найдена.\n\n${MSG_COMMANDS}`;
 export const MSG_UNVERIFIED = "Тебя скоро добавят, подожди немного.";
-export const MSG_INFO = `Привет! Я бот для отслеживания товаров с маркетплейсов.\n\nОтправь мне ссылку на товар с Ozon или Wildberries, и я сохраню его.\n\n${MSG_COMMANDS}`;
+export const MSG_LINK_LIMIT = `Достигнут лимит: 10 ссылок. Удали ненужные через /list`;
+export const MSG_INFO = `Привет! Я бот для отслеживания товаров с маркетплейсов.\n\nОтправь мне ссылку на товар с Ozon, и я сохраню его.\n\n${MSG_COMMANDS}`;
 
 const MAX_NAME_LENGTH = 40;
 

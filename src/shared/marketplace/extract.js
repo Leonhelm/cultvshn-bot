@@ -1,4 +1,4 @@
-const MARKETPLACE_HOSTS = ["ozon.ru", "wildberries.ru"];
+const MARKETPLACE_HOSTS = ["ozon.ru"];
 
 function isMarketplaceHost(hostname) {
   return MARKETPLACE_HOSTS.some(
@@ -36,7 +36,7 @@ export function extractMarketplaceLink(text, entities) {
 
   if (text) {
     const match = text.match(
-      /https?:\/\/(?:www\.)?(?:ozon\.ru|wildberries\.ru)\S*/i,
+      /https?:\/\/(?:www\.)?ozon\.ru\S*/i,
     );
     if (match && isMarketplaceUrl(match[0])) {
       return match[0];
@@ -50,7 +50,6 @@ export function getMarketplaceType(urlStr) {
   try {
     const { hostname } = new URL(urlStr);
     if (hostname === "ozon.ru" || hostname.endsWith(".ozon.ru")) return "ozon";
-    if (hostname === "wildberries.ru" || hostname.endsWith(".wildberries.ru")) return "wildberries";
     return null;
   } catch {
     return null;

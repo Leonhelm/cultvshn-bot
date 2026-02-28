@@ -24,6 +24,11 @@ export async function saveLink(chatId, messageId, url) {
   });
 }
 
+export async function countLinksByChat(chatId) {
+  const snap = await linksCol.where("chatId", "==", String(chatId)).count().get();
+  return snap.data().count;
+}
+
 export async function listLinks() {
   const snap = await linksCol.orderBy("createdAt", "desc").get();
   return snap.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
