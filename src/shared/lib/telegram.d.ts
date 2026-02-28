@@ -21,9 +21,17 @@ export interface TgMessage {
   date: number;
 }
 
+export interface TgCallbackQuery {
+  id: string;
+  from: TgUser;
+  message?: TgMessage;
+  data?: string;
+}
+
 export interface TgUpdate {
   update_id: number;
   message?: TgMessage;
+  callback_query?: TgCallbackQuery;
 }
 
 export function getUpdates(
@@ -36,6 +44,18 @@ export function sendMessage(
   text: string,
   extra?: Record<string, unknown>,
 ): Promise<{ message_id: number }>;
+
+export function answerCallbackQuery(
+  callbackQueryId: string,
+  text?: string,
+): Promise<boolean>;
+
+export function editMessageText(
+  chatId: number | string,
+  messageId: number,
+  text: string,
+  extra?: Record<string, unknown>,
+): Promise<TgMessage>;
 
 export function deleteMessage(
   chatId: number | string,

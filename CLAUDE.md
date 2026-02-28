@@ -43,14 +43,15 @@ src/
 
 ## Firestore — коллекции
 - `chats/{chatId}`: `firstName, lastName?, username?, role ('unverified'|'verified'|'admin'), state?, createdAt, updatedAt`
-- `links/{chatId}_{messageId}`: `url, chatId, createdAt`
+- `links/{chatId}_{messageId}`: `url, chatId, createdAt, name?, price?, checkedAt?, invalidAt?`
 
 ## Поведение сообщений (реализовано в poll.js)
 - verified/admin + ссылка маркетплейса → сохранение, ответ «Ссылка сохранена!»
-- verified/admin + `/list` → список ссылок с `/mp_view_{id}` и `/mp_delete_{id}`
-- verified/admin + `/mp_view_{id}` → URL ссылки или «Ссылка не найдена.»
-- verified/admin + `/mp_delete_{id}` → удаление ссылки или «Ссылка не найдена.»
-- verified/admin (прочее) → «Доступные команды:\n/list»
+- verified/admin + `/list` → inline-клавиатура: [Название товара] [🗑] на каждую ссылку; callback `view:`/`del:` обрабатываются в `handleCallbackQuery`
+- verified/admin + `/info` → приветствие-заглушка
+- verified/admin + `/mp_view_{id}` → URL ссылки или «Ссылка не найдена.» (legacy, также через inline callback `view:`)
+- verified/admin + `/mp_delete_{id}` → удаление ссылки (legacy, также через inline callback `del:`)
+- verified/admin (прочее) → «Доступные команды:\n/list · /info»
 - unverified → «Тебя скоро добавят, подожди немного.» + upsert в chats/{chatId}
 - Тексты ответов — `messages.js`
 - Предыдущие сообщения бота и пользователя удаляем (in-memory Map по chatId), оставляем только последнее
