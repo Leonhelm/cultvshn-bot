@@ -10,34 +10,24 @@ user-invocable: true
 
 ```
 src/shared/marketplace/
-├── extract.js + extract.d.ts    # Парсинг ссылок из Telegram-сообщений; getMarketplaceType()
-├── parser.js + parser.d.ts      # Получение названия и цены товара; parseMarketplace()
-└── monitor.js                   # Фоновый мониторинг каждые 30 мин; startMarketplaceMonitor()
+└── extract.js + extract.d.ts    # Парсинг ссылок из Telegram-сообщений; getMarketplaceType()
+
+src/entrypoints/
+└── check.js                     # Точка входа: сортировка ссылок по давности проверки; console.log
 ```
 
 ## Поддерживаемые маркетплейсы
 
 `ozon.ru`, `wildberries.ru` — домены в `MARKETPLACE_HOSTS` в `extract.js`
 
-## Стратегии парсинга
+## Проверка ссылок (GitHub Action)
 
-### Wildberries
-- Извлекает product ID из URL: `/catalog/{id}/`
-- Запрашивает публичный API: `https://card.wb.ru/cards/v2/detail?appType=1&curr=rub&dest=-1257786&spp=30&nm={id}`
-- Имя: `brand / name` из JSON. Цена: `salePriceU / 100` (копейки → рубли)
-
-### Ozon
-- Загружает HTML с браузерными заголовками (`User-Agent`, `Accept-Language: ru-RU`), следует редиректам (в т.ч. короткие ссылки `/t/…`)
-- Стратегия 1: `<script type="application/ld+json">` — schema.org Product
-- Стратегия 2: meta-теги `og:title` + `product:price:amount`
-- Стратегия 3: `<script id="__NEXT_DATA__">` — Next.js page props
-
-## Мониторинг цен
-
-`startMarketplaceMonitor()` — запускается при старте бота, повтор каждые 30 минут:
-- Для каждой ссылки вызывает `parseMarketplace(url)` → `{name, price} | null`
-- Успех: `updateLinkData(id, {name, price, invalidAt: false})` → обновляет `name`, `price`, `checkedAt`, очищает `invalidAt`
-- Неудача: `updateLinkData(id, {invalidAt: true})` → ставит `invalidAt` (timestamp) в Firestore
+`.github/workflows/check.yml` — запускается раз в полчаса (`cron: '0,30 * * * *'`):
+- Запускает `node src/entrypoints/check.js`
+- Читает все ссылки из Firestore через `listLinks()`
+- Сортирует по `checkedAt` asc: без `checkedAt` (никогда не проверялись) идут первыми
+- Выводит через `console.log`: `[<ISO дата> | never] <id> — <url>`
+- Точка входа сейчас заглушка — парсинга нет, `checkedAt` не обновляется
 
 ## Firestore-схема ссылок (`links/{chatId}_{messageId}`)
 
@@ -54,19 +44,17 @@ src/shared/marketplace/
 ## Команды бота (verified/admin)
 
 - Отправка ссылки ozon.ru/wildberries.ru → сохранение в `links/{chatId}_{messageId}`
-- `/list` → список всех ссылок с командами `/mp_view_{id}` и `/mp_delete_{id}`
-- `/mp_view_{id}` → показать URL ссылки
-- `/mp_delete_{id}` → удалить ссылку из Firestore
+- `/list` → список всех ссылок с инлайн-кнопками [Название] [🗑]
+- callback `view:<id>` → показать URL ссылки
+- callback `del:<id>` → удалить ссылку из Firestore
 
 ## Как добавить новый маркетплейс
 
 1. `extract.js` — добавить домен в `MARKETPLACE_HOSTS`
-2. `extract.js` — обновить regex-фолбэк (строка с `match`) и добавить ветку в `getMarketplaceType()`
-3. `parser.js` — добавить `parseNewMarketplace(url)` и ветку в `parseMarketplace()`
+2. `extract.js` — обновить regex-фолбэк и добавить ветку в `getMarketplaceType()`
 
 ## Связанные файлы
 
-- `parser.js` — `parseMarketplace()` → `{name, price} | null`
 - `firestore.js` — `saveLink()`, `listLinks()`, `getLink()`, `deleteLink()`, `updateLinkData()`
-- `messages.js` — `MSG_LINK_SAVED`, `MSG_LINK_DELETED`, `MSG_LINK_NOT_FOUND`, `msgList()`
+- `messages.js` — `MSG_LINK_SAVED`, `MSG_LINK_NOT_FOUND`, `msgList()`
 - `poll.js` — оркестрация: extract → save / list / view / delete → respond
