@@ -1,12 +1,14 @@
-export const MSG_COMMANDS = "Доступные команды:\n/list · /info";
-export const MSG_LIST_HEADER = "📦 Сохранённые товары";
-export const MSG_LIST_EMPTY = `Список пуст.\n\n${MSG_COMMANDS}`;
-export const MSG_LINK_SAVED = `Ссылка сохранена!\n\n${MSG_COMMANDS}`;
-export const MSG_LINK_DELETED = `Ссылка удалена!\n\n${MSG_COMMANDS}`;
-export const MSG_LINK_NOT_FOUND = `Ссылка не найдена.\n\n${MSG_COMMANDS}`;
-export const MSG_UNVERIFIED = "Тебя скоро добавят, подожди немного.";
-export const MSG_LINK_LIMIT = `Достигнут лимит: 10 ссылок. Удали ненужные через /list`;
-export const MSG_INFO = `Привет! Я бот для отслеживания товаров с маркетплейсов.\n\nОтправь мне ссылку на товар с Ozon, и я сохраню его.\n\n${MSG_COMMANDS}`;
+export const MSG_COMMANDS = "Мои команды~ 🌿\n/list — твоя корзинка\n/info — обо мне";
+export const MSG_LIST_HEADER = "🍄 Твоя корзинка";
+export const MSG_LIST_EMPTY = `Корзинка пустая~ 🧺\nОтправь мне ссылочку!\n\n${MSG_COMMANDS}`;
+export const MSG_LINK_SAVED = `Положила в корзинку~ 🍄✨\n\n${MSG_COMMANDS}`;
+export const MSG_LINK_DELETED = `Убрала из корзинки~ 🍂\n\n${MSG_COMMANDS}`;
+export const MSG_LINK_NOT_FOUND = `Не нашла эту ссылочку в корзинке… 🔍\n\n${MSG_COMMANDS}`;
+export const MSG_UNVERIFIED = "Подожди немножко~ 🍄 Тебя скоро добавят в грибницу!";
+export const MSG_LINK_LIMIT = "Ой, корзинка полная~ 🧺 Уже 10 товаров! Убери лишние через /list";
+export const MSG_INFO = `Привет~ Я Мико-Мико, твоя грибная помощница! 🍄🌸\n\nОтправь мне ссылочку на товар с маркетплейса, и я положу его в корзинку~\n\nСейчас я умею работать с Ozon 🛒\n\n💡 Удобнее всего добавлять товар через кнопку «Поделиться» в приложении маркетплейса → Telegram → cultvshn\n\n⚠️ Я немножко забывчивая, поэтому лучше включи автоудаление сообщений в этом чате (оптимально 1 день) — так будет чище и уютнее~ 🍃\n\n${MSG_COMMANDS}`;
+export const MSG_CB_DELETED = "Убрала~ 🍂";
+export const MSG_CB_NOT_FOUND = "Не нашла… 🍄";
 
 const MAX_NAME_LENGTH = 40;
 

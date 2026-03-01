@@ -7,6 +7,8 @@ export declare const MSG_LINK_NOT_FOUND: string;
 export declare const MSG_UNVERIFIED: string;
 export declare const MSG_LINK_LIMIT: string;
 export declare const MSG_INFO: string;
+export declare const MSG_CB_DELETED: string;
+export declare const MSG_CB_NOT_FOUND: string;
 
 export interface ListResult {
   text: string;

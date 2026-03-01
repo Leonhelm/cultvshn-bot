@@ -8,7 +8,7 @@ import {
   editMessageText,
 } from "../shared/lib/telegram.js";
 import { getChat, upsertUnverifiedChat, saveLink, countLinksByChat, listLinks, getLink, deleteLink, terminateFirestore } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_LIMIT, MSG_LINK_NOT_FOUND, MSG_INFO, msgList } from "../shared/lib/messages.js";
+import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_LIMIT, MSG_LINK_NOT_FOUND, MSG_INFO, MSG_CB_DELETED, MSG_CB_NOT_FOUND, msgList } from "../shared/lib/messages.js";
 import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
 
 let running = true;
@@ -111,9 +111,9 @@ async function handleCallbackQuery(cb) {
       await editMessageText(chatId, messageId, result.text, {
         reply_markup: result.reply_markup || { inline_keyboard: [] },
       });
-      await answerCallbackQuery(cb.id, "Удалено!");
+      await answerCallbackQuery(cb.id, MSG_CB_DELETED);
     } else {
-      await answerCallbackQuery(cb.id, "Ссылка не найдена.");
+      await answerCallbackQuery(cb.id, MSG_CB_NOT_FOUND);
     }
   } else {
     await answerCallbackQuery(cb.id);
