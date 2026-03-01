@@ -6,9 +6,9 @@ import { logInfo, logError } from "../shared/lib/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const POLL_SCRIPT = join(__dirname, "poll.js");
+const WEBHOOK_SCRIPT = join(__dirname, "webhook.js");
 const PROJECT_ROOT = join(__dirname, "..", "..");
-const PID_FILE = join(PROJECT_ROOT, "poll-daemon.pid");
+const PID_FILE = join(PROJECT_ROOT, "webhook-daemon.pid");
 
 const INITIAL_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 60_000;
@@ -139,11 +139,11 @@ function startDaemon() {
   function startChild() {
     const startedAt = Date.now();
 
-    child = spawn(process.execPath, [POLL_SCRIPT], {
+    child = spawn(process.execPath, [WEBHOOK_SCRIPT], {
       stdio: "inherit",
     });
 
-    logInfo(`Daemon: poll process spawned (PID ${child.pid})`);
+    logInfo(`Daemon: webhook process spawned (PID ${child.pid})`);
 
     child.on("exit", (code, signal) => {
       const uptimeMs = Date.now() - startedAt;
@@ -151,13 +151,13 @@ function startDaemon() {
 
       if (stopping) {
         logInfo(
-          `Daemon: poll process exited (code=${code}, signal=${signal}), daemon is stopping`,
+          `Daemon: webhook process exited (code=${code}, signal=${signal}), daemon is stopping`,
         );
         return;
       }
 
       if (code === 0) {
-        logInfo("Daemon: poll process exited cleanly (code=0), not restarting");
+        logInfo("Daemon: webhook process exited cleanly (code=0), not restarting");
         cleanup();
         return;
       }
@@ -165,12 +165,12 @@ function startDaemon() {
       if (uptimeMs >= STABLE_THRESHOLD_MS) {
         backoffMs = INITIAL_BACKOFF_MS;
         logInfo(
-          `Daemon: poll process was stable (${Math.round(uptimeMs / 1000)}s), backoff reset`,
+          `Daemon: webhook process was stable (${Math.round(uptimeMs / 1000)}s), backoff reset`,
         );
       }
 
       logInfo(
-        `Daemon: poll process exited (code=${code}, signal=${signal}), restarting in ${backoffMs}ms`,
+        `Daemon: webhook process exited (code=${code}, signal=${signal}), restarting in ${backoffMs}ms`,
       );
 
       restartTimer = setTimeout(() => {
@@ -184,7 +184,7 @@ function startDaemon() {
     });
 
     child.on("error", (error) => {
-      logError("Daemon: failed to spawn poll process", error);
+      logError("Daemon: failed to spawn webhook process", error);
     });
   }
 

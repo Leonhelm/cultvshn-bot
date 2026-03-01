@@ -4,8 +4,7 @@
   "type": "module",
   "scripts": {
     "start:poll": "node src/entrypoints/poll.js",
-    "start:poll-daemon": "node src/entrypoints/poll-daemon.js",
-    "stop:poll-daemon": "node src/entrypoints/poll-daemon.js stop",
+    "start:webhook": "node src/entrypoints/webhook.js",
     "check:links": "node src/entrypoints/check.js",
     "typecheck": "tsc --noEmit"
   },

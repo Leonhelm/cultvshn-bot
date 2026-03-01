@@ -6,7 +6,7 @@ BOT_DIR="${BASE_DIR}/cultvshn-bot-main"
 DEPLOY_SCRIPT="${BASE_DIR}/deploy.sh"
 DEPLOY_PID_FILE="${BASE_DIR}/deploy.pid"
 NODE_BIN="/opt/bin/node"
-BOT_PID_FILE="${BOT_DIR}/poll-daemon.pid"
+BOT_PID_FILE="${BOT_DIR}/webhook-daemon.pid"
 LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
 
 start() {
@@ -49,7 +49,7 @@ stop() {
         bot_pid=$(cat "$BOT_PID_FILE")
         if kill -0 "$bot_pid" 2>/dev/null; then
             echo "Stopping bot daemon (PID $bot_pid)..."
-            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/poll-daemon.js stop 2>&1
+            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/webhook-daemon.js stop 2>&1
             sleep 10
             if kill -0 "$bot_pid" 2>/dev/null; then
                 kill -9 "$bot_pid" 2>/dev/null

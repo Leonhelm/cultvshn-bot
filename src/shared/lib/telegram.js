@@ -47,6 +47,18 @@ export function editMessageText(chatId, messageId, text, extra) {
   });
 }
 
+export function setWebhook(url, secretToken) {
+  return callApi("setWebhook", {
+    url,
+    secret_token: secretToken,
+    allowed_updates: ["message", "callback_query"],
+  });
+}
+
+export function deleteWebhook() {
+  return callApi("deleteWebhook", {});
+}
+
 export async function deleteMessage(chatId, messageId) {
   try {
     await callApi("deleteMessage", {

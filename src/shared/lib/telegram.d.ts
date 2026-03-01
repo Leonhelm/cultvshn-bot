@@ -57,6 +57,13 @@ export function editMessageText(
   extra?: Record<string, unknown>,
 ): Promise<TgMessage>;
 
+export function setWebhook(
+  url: string,
+  secretToken: string,
+): Promise<boolean>;
+
+export function deleteWebhook(): Promise<boolean>;
+
 export function deleteMessage(
   chatId: number | string,
   messageId: number,

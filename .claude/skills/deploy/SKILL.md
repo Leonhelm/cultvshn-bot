@@ -7,7 +7,7 @@ user-invocable: true
 # Deploy — Keenetic OS 5+
 
 ## Механика deploy.sh
-- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon`
+- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `webhook-daemon`
 - Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop → deploy → start; при ошибке — откат из `.old`
 - SHA сохраняется только после успешного деплоя
 - Layout: базовая директория содержит `.env`, `cultvshn-bot-main/`, `deploy.pid`
@@ -23,6 +23,9 @@ mkdir -p /tmp/mnt/181ADB641ADB3E06/projects/cultvshn
 cat > /tmp/mnt/181ADB641ADB3E06/projects/cultvshn/.env << 'EOF'
 TG_BOT_API_TOKEN=...
 FIREBASE_SERVICE_ACCOUNT_JSON=...
+WEBHOOK_URL=https://your-domain.keenetic.pro:8443
+WEBHOOK_PORT=8443
+WEBHOOK_SECRET_TOKEN=...
 EOF
 
 # 3. Скачать deploy.sh
@@ -42,8 +45,8 @@ chmod +x /opt/etc/init.d/S99cultvshn-bot
 ## Управление
 
 ```
-/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + daemon
-/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + daemon
+/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + webhook-daemon
+/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + webhook-daemon
 /opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск
 /opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса (deploy + bot)
 tail -f /opt/var/log/cultvshn-bot.log    # Логи
