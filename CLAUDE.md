@@ -29,7 +29,9 @@ scripts/                            # Скрипты по запуску и об
 src/
 ├── entrypoints/                    # Точки входа
 │   ├── poll.js                     # Long polling + обработка сообщений
-│   └── poll-daemon.js              # Daemon-supervisor для poll.js
+│   ├── poll-daemon.js              # Daemon-supervisor для poll.js
+│   ├── overview-marketplaces.js    # Обзор ссылок маркетплейсов (цикл каждые 10 мин)
+│   └── overview-marketplaces-daemon.js  # Daemon-supervisor для overview-marketplaces.js
 └── shared/                         # Переиспользуемый код
     ├── config/                     # Чтение переменных окружения (dotenv)
     │   └── env.js + env.d.ts
@@ -64,6 +66,18 @@ src/
 
 ## poll-daemon (supervisor)
 - Запускает `poll.js` как child, перезапускает при аварийном exit (code ≠ 0)
+- Exponential backoff: 1s → 2s → 4s … cap 60s; сброс при стабильной работе
+- Пробрасывает SIGTERM/SIGINT дочернему процессу. Не перезапускает при exit 0
+
+## overview-marketplaces
+- Читает все ссылки из Firestore, сортирует по `checkedAt` asc (без `checkedAt` — первыми)
+- Логирует: `[ISO-дата | never] id — url`
+- Цикл: проверка → sleep 10 мин → повтор
+- Graceful shutdown по SIGTERM/SIGINT
+- Сейчас заглушка — парсинга нет, `checkedAt` не обновляется
+
+## overview-marketplaces-daemon (supervisor)
+- Запускает `overview-marketplaces.js` как child, перезапускает при аварийном exit (code ≠ 0)
 - Exponential backoff: 1s → 2s → 4s … cap 60s; сброс при стабильной работе
 - Пробрасывает SIGTERM/SIGINT дочернему процессу. Не перезапускает при exit 0
 

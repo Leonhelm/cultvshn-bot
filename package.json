@@ -6,7 +6,9 @@
     "start:poll": "node src/entrypoints/poll.js",
     "start:poll-daemon": "node src/entrypoints/poll-daemon.js",
     "stop:poll-daemon": "node src/entrypoints/poll-daemon.js stop",
-    "check:links": "node src/entrypoints/check.js",
+    "start:overview-marketplaces": "node src/entrypoints/overview-marketplaces.js",
+    "start:overview-marketplaces-daemon": "node src/entrypoints/overview-marketplaces-daemon.js",
+    "stop:overview-marketplaces-daemon": "node src/entrypoints/overview-marketplaces-daemon.js stop",
     "typecheck": "tsc --noEmit"
   },
   "engines": {

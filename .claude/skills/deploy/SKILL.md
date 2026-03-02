@@ -7,8 +7,8 @@ user-invocable: true
 # Deploy — Keenetic OS 5+
 
 ## Механика deploy.sh
-- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon`
-- Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop → deploy → start; при ошибке — откат из `.old`
+- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon` и `overview-marketplaces-daemon`
+- Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop всех демонов → deploy → start; при ошибке — откат из `.old`
 - SHA сохраняется только после успешного деплоя
 - Layout: базовая директория содержит `.env`, `cultvshn-bot-main/`, `deploy.pid`
 - Базовая директория: `/tmp/mnt/181ADB641ADB3E06/projects/cultvshn`
@@ -42,9 +42,9 @@ chmod +x /opt/etc/init.d/S99cultvshn-bot
 ## Управление
 
 ```
-/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + daemon
-/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + daemon
-/opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск
-/opt/etc/init.d/S99cultvshn-bot status   # Проверка статуса (deploy + bot)
+/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + все демоны (bot + overview)
+/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + все демоны
+/opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск всех компонентов
+/opt/etc/init.d/S99cultvshn-bot status   # Статус: deploy, bot, overview
 tail -f /opt/var/log/cultvshn-bot.log    # Логи
 ```
