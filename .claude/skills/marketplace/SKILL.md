@@ -13,21 +13,24 @@ src/shared/marketplace/
 └── extract.js + extract.d.ts    # Парсинг ссылок из Telegram-сообщений; getMarketplaceType()
 
 src/entrypoints/
-└── check.js                     # Точка входа: сортировка ссылок по давности проверки; console.log
+├── overview-marketplaces.js             # Long-running: обзор ссылок (цикл каждые 10 мин)
+└── overview-marketplaces-daemon.js      # Daemon-supervisor для overview-marketplaces.js
 ```
 
 ## Поддерживаемые маркетплейсы
 
 `ozon.ru` — единственный домен в `MARKETPLACE_HOSTS` в `extract.js`
 
-## Проверка ссылок (GitHub Action)
+## Обзор ссылок (overview-marketplaces)
 
-`.github/workflows/check.yml` — запускается раз в полчаса (`cron: '0,30 * * * *'`):
-- Запускает `node src/entrypoints/check.js`
+Daemon на устройстве (`overview-marketplaces-daemon.js` → `overview-marketplaces.js`):
+- Long-running процесс, цикл каждые 10 мин
 - Читает все ссылки из Firestore через `listLinks()`
 - Сортирует по `checkedAt` asc: без `checkedAt` (никогда не проверялись) идут первыми
-- Выводит через `console.log`: `[<ISO дата> | never] <id> — <url>`
-- Точка входа сейчас заглушка — парсинга нет, `checkedAt` не обновляется
+- Логирует через `logInfo`: `[<ISO дата> | never] <id> — <url>`
+- Graceful shutdown по SIGTERM/SIGINT
+- Сейчас заглушка — парсинга нет, `checkedAt` не обновляется
+- Запуск/остановка через `S99cultvshn-bot` и `deploy.sh` (вместе с poll-daemon)
 
 ## Firestore-схема ссылок (`links/{chatId}_{messageId}`)
 
