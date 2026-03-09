@@ -1,21 +1,65 @@
 ---
-description: "Документация по деплою и управлению cultvshn-bot на Keenetic OS 5+"
+description: "Деплой, daemon-supervisors и управление cultvshn-bot на Keenetic OS 5+"
 disable-model-invocation: false
 user-invocable: true
 ---
 
 # Deploy — Keenetic OS 5+
 
+## Файлы
+
+```
+scripts/
+├── deploy.sh                               # Автодеплой: скачивание, обновление, рестарт
+└── init.d/
+    └── S99cultvshn-bot                     # Keenetic init.d сервис
+src/entrypoints/
+├── poll-daemon.js                          # Supervisor для poll.js
+└── overview-marketplaces-daemon.js         # Supervisor для overview-marketplaces.js
+```
+
 ## Механика deploy.sh
+
 - Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon` и `overview-marketplaces-daemon`
 - Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop всех демонов → deploy → start; при ошибке — откат из `.old`
 - SHA сохраняется только после успешного деплоя
-- Layout: базовая директория содержит `.env`, `cultvshn-bot-main/`, `deploy.pid`
 - Базовая директория: `/tmp/mnt/181ADB641ADB3E06/projects/cultvshn`
+- Layout: `.env`, `cultvshn-bot-main/`, `deploy.pid`, `.current-sha`
+- Логи: `/opt/var/log/cultvshn-bot.log`
+
+## Daemon-supervisors
+
+Два одинаковых по структуре файла: `poll-daemon.js` и `overview-marketplaces-daemon.js`.
+Каждый управляет своим child-процессом (`poll.js` / `overview-marketplaces.js`).
+
+### Поведение
+
+- `startDaemon()` — spawn child через `node`, записывает PID в файл (`poll-daemon.pid` / `overview-marketplaces-daemon.pid`)
+- При аварийном exit child (code ≠ 0): перезапуск с exponential backoff
+  - Начало: 1с, множитель: ×2, потолок: 60с
+  - Сброс backoff если child проработал ≥ 60с (стабильный)
+- При exit code 0: НЕ перезапускает (graceful shutdown)
+- Пробрасывает `SIGTERM`/`SIGINT` дочернему процессу
+- Если child не завершился за 15с → `SIGKILL`
+- `SIGHUP` игнорируется (nohup-совместимость)
+
+### Команды
+
+```bash
+node src/entrypoints/poll-daemon.js           # start
+node src/entrypoints/poll-daemon.js stop      # stop (SIGTERM → 15s → SIGKILL)
+
+node src/entrypoints/overview-marketplaces-daemon.js
+node src/entrypoints/overview-marketplaces-daemon.js stop
+```
+
+### `stopDaemon()`
+
+Читает PID-файл → `SIGTERM` → poll 500ms → deadline 15s → `SIGKILL` → удаляет PID-файл.
 
 ## Первоначальная установка (одноразово)
 
-```
+```bash
 # 1. Создать базовую директорию
 mkdir -p /tmp/mnt/181ADB641ADB3E06/projects/cultvshn
 
@@ -41,7 +85,7 @@ chmod +x /opt/etc/init.d/S99cultvshn-bot
 
 ## Управление
 
-```
+```bash
 /opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + все демоны (bot + overview)
 /opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + все демоны
 /opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск всех компонентов
