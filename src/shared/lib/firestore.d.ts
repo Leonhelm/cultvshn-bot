@@ -10,39 +10,40 @@ export interface ChatDoc {
   updatedAt: Timestamp;
 }
 
-export interface LinkDoc {
-  url: string;
+export interface ItemDoc {
+  name: string;
   chatId: string;
   createdAt: Timestamp;
-  checkedAt?: Timestamp;
-  name?: string;
-  price?: number;
-  invalidAt?: Timestamp;
+  addedDates: Timestamp[];
+  nextPredicted: Timestamp | null;
 }
 
-export interface LinkDocWithId extends LinkDoc {
+export interface ItemDocWithId extends ItemDoc {
   id: string;
 }
 
 export function getChat(chatId: string): Promise<ChatDoc | null>;
 
-export function saveLink(
+export function saveItem(
   chatId: string,
-  messageId: number,
-  url: string,
-): Promise<void>;
+  name: string,
+): Promise<{ created: boolean }>;
 
-export function countLinksByChat(chatId: string): Promise<number>;
+export function countItemsByChat(chatId: string): Promise<number>;
 
-export function listLinks(): Promise<LinkDocWithId[]>;
+export function listItemsByChat(chatId: string): Promise<ItemDocWithId[]>;
 
-export function getLink(docId: string): Promise<LinkDocWithId | null>;
+export function listAllItems(): Promise<ItemDocWithId[]>;
 
-export function deleteLink(docId: string): Promise<void>;
+export function getItem(docId: string): Promise<ItemDocWithId | null>;
 
-export function updateLinkData(
+export function deleteItem(docId: string): Promise<void>;
+
+export function addItemDate(docId: string): Promise<boolean>;
+
+export function updateItemPrediction(
   docId: string,
-  data: { name?: string; price?: number; invalidAt?: boolean },
+  nextPredicted: Timestamp | null,
 ): Promise<void>;
 
 export function terminateFirestore(): Promise<void>;

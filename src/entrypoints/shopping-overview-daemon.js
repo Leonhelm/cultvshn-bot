@@ -6,9 +6,9 @@ import { logInfo, logError } from "../shared/lib/logger.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-const OVERVIEW_SCRIPT = join(__dirname, "overview-marketplaces.js");
+const OVERVIEW_SCRIPT = join(__dirname, "shopping-overview.js");
 const PROJECT_ROOT = join(__dirname, "..", "..");
-const PID_FILE = join(PROJECT_ROOT, "overview-marketplaces-daemon.pid");
+const PID_FILE = join(PROJECT_ROOT, "shopping-overview-daemon.pid");
 
 const INITIAL_BACKOFF_MS = 1_000;
 const MAX_BACKOFF_MS = 60_000;
@@ -143,7 +143,7 @@ function startDaemon() {
       stdio: "inherit",
     });
 
-    logInfo(`Daemon: overview-marketplaces process spawned (PID ${child.pid})`);
+    logInfo(`Daemon: shopping-overview process spawned (PID ${child.pid})`);
 
     child.on("exit", (code, signal) => {
       const uptimeMs = Date.now() - startedAt;
@@ -151,13 +151,13 @@ function startDaemon() {
 
       if (stopping) {
         logInfo(
-          `Daemon: overview-marketplaces process exited (code=${code}, signal=${signal}), daemon is stopping`,
+          `Daemon: shopping-overview process exited (code=${code}, signal=${signal}), daemon is stopping`,
         );
         return;
       }
 
       if (code === 0) {
-        logInfo("Daemon: overview-marketplaces process exited cleanly (code=0), not restarting");
+        logInfo("Daemon: shopping-overview process exited cleanly (code=0), not restarting");
         cleanup();
         return;
       }
@@ -165,12 +165,12 @@ function startDaemon() {
       if (uptimeMs >= STABLE_THRESHOLD_MS) {
         backoffMs = INITIAL_BACKOFF_MS;
         logInfo(
-          `Daemon: overview-marketplaces process was stable (${Math.round(uptimeMs / 1000)}s), backoff reset`,
+          `Daemon: shopping-overview process was stable (${Math.round(uptimeMs / 1000)}s), backoff reset`,
         );
       }
 
       logInfo(
-        `Daemon: overview-marketplaces process exited (code=${code}, signal=${signal}), restarting in ${backoffMs}ms`,
+        `Daemon: shopping-overview process exited (code=${code}, signal=${signal}), restarting in ${backoffMs}ms`,
       );
 
       restartTimer = setTimeout(() => {
@@ -184,7 +184,7 @@ function startDaemon() {
     });
 
     child.on("error", (error) => {
-      logError("Daemon: failed to spawn overview-marketplaces process", error);
+      logError("Daemon: failed to spawn shopping-overview process", error);
     });
   }
 

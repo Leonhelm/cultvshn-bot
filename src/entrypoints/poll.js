@@ -7,9 +7,34 @@ import {
   answerCallbackQuery,
   editMessageText,
 } from "../shared/lib/telegram.js";
-import { getChat, upsertUnverifiedChat, saveLink, countLinksByChat, listLinks, getLink, deleteLink, terminateFirestore } from "../shared/lib/firestore.js";
-import { MSG_COMMANDS, MSG_UNVERIFIED, MSG_LINK_SAVED, MSG_LINK_LIMIT, MSG_LINK_NOT_FOUND, MSG_INFO, MSG_CB_DELETED, MSG_CB_NOT_FOUND, msgList } from "../shared/lib/messages.js";
-import { extractMarketplaceLink } from "../shared/marketplace/extract.js";
+import {
+  getChat,
+  upsertUnverifiedChat,
+  saveItem,
+  countItemsByChat,
+  listItemsByChat,
+  getItem,
+  deleteItem,
+  addItemDate,
+  terminateFirestore,
+} from "../shared/lib/firestore.js";
+import {
+  MSG_COMMANDS,
+  MSG_UNVERIFIED,
+  MSG_ITEM_ADDED,
+  MSG_ITEM_UPDATED,
+  MSG_ITEM_TOO_LONG,
+  MSG_ITEM_LIMIT,
+  MSG_ITEM_NOT_FOUND,
+  MSG_INFO,
+  MSG_CB_ADDED,
+  MSG_CB_DELETED,
+  MSG_CB_NOT_FOUND,
+  msgList,
+} from "../shared/lib/messages.js";
+
+const ITEM_NAME_MAX = 50;
+const ITEM_LIMIT = 50;
 
 let running = true;
 
@@ -36,6 +61,12 @@ async function trackAndDeletePrevious(chatId, messageId, kind) {
   lastMessages.set(chatId, entry);
 }
 
+function parseAddCommand(text) {
+  if (!text || !text.startsWith("+")) return null;
+  const rest = text.slice(1).trim();
+  return rest || null;
+}
+
 async function handleMessage(msg) {
   const chatId = msg.chat.id;
   const from = msg.from;
@@ -47,22 +78,26 @@ async function handleMessage(msg) {
   const role = chatDoc?.role;
 
   if (role === "verified" || role === "admin") {
-    const marketplaceUrl = extractMarketplaceLink(msg.text, msg.entities);
+    const itemName = parseAddCommand(msg.text);
 
     let text;
     let extra;
 
-    if (marketplaceUrl) {
-      const count = await countLinksByChat(String(chatId));
-      if (count >= 10) {
-        text = MSG_LINK_LIMIT;
+    if (itemName) {
+      if (itemName.length > ITEM_NAME_MAX) {
+        text = MSG_ITEM_TOO_LONG;
       } else {
-        await saveLink(String(chatId), msg.message_id, marketplaceUrl);
-        text = MSG_LINK_SAVED;
+        const count = await countItemsByChat(String(chatId));
+        if (count >= ITEM_LIMIT) {
+          text = MSG_ITEM_LIMIT;
+        } else {
+          const result = await saveItem(String(chatId), itemName);
+          text = result.created ? MSG_ITEM_ADDED : MSG_ITEM_UPDATED;
+        }
       }
     } else if (msg.text === "/list") {
-      const links = await listLinks();
-      const result = msgList(links);
+      const items = await listItemsByChat(String(chatId));
+      const result = msgList(items);
       text = result.text;
       if (result.reply_markup) extra = { reply_markup: result.reply_markup };
     } else if (msg.text === "/info") {
@@ -96,18 +131,24 @@ async function handleCallbackQuery(cb) {
   const [action, ...rest] = cb.data.split(":");
   const docId = rest.join(":");
 
-  if (action === "view") {
-    const link = await getLink(docId);
-    const text = link ? `${link.url}\n\n${MSG_COMMANDS}` : MSG_LINK_NOT_FOUND;
-    const sent = await sendMessage(chatId, text);
-    await trackAndDeletePrevious(chatId, sent.message_id, "bot");
-    await answerCallbackQuery(cb.id);
+  if (action === "add") {
+    const found = await addItemDate(docId);
+    if (found) {
+      const items = await listItemsByChat(String(chatId));
+      const result = msgList(items);
+      await editMessageText(chatId, messageId, result.text, {
+        reply_markup: result.reply_markup || { inline_keyboard: [] },
+      });
+      await answerCallbackQuery(cb.id, MSG_CB_ADDED);
+    } else {
+      await answerCallbackQuery(cb.id, MSG_CB_NOT_FOUND);
+    }
   } else if (action === "del") {
-    const link = await getLink(docId);
-    if (link) {
-      await deleteLink(docId);
-      const links = await listLinks();
-      const result = msgList(links);
+    const item = await getItem(docId);
+    if (item) {
+      await deleteItem(docId);
+      const items = await listItemsByChat(String(chatId));
+      const result = msgList(items);
       await editMessageText(chatId, messageId, result.text, {
         reply_markup: result.reply_markup || { inline_keyboard: [] },
       });
@@ -115,6 +156,8 @@ async function handleCallbackQuery(cb) {
     } else {
       await answerCallbackQuery(cb.id, MSG_CB_NOT_FOUND);
     }
+  } else if (action === "noop") {
+    await answerCallbackQuery(cb.id);
   } else {
     await answerCallbackQuery(cb.id);
   }

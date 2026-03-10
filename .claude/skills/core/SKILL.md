@@ -73,7 +73,7 @@ interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: Tg
 ## firestore.js
 
 Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON`.
-Коллекции: `chats`, `links`.
+Коллекции: `chats`, `items`.
 
 ### Коллекция `chats/{chatId}`
 
@@ -95,10 +95,10 @@ upsertUnverifiedChat(chatId: string, info: { firstName: string; lastName?: strin
 terminateFirestore(): Promise<void>
 ```
 
-### Функции ссылок
+### Функции покупок
 
-Документированы в `/marketplace` (доменная модель маркетплейсов):
-`saveLink`, `countLinksByChat`, `listLinks`, `getLink`, `deleteLink`, `updateLinkData`
+Документированы в `/shopping` (доменная модель списка покупок):
+`saveItem`, `countItemsByChat`, `listItemsByChat`, `listAllItems`, `getItem`, `deleteItem`, `addItemDate`, `updateItemPrediction`
 
 ## poll.js — роутинг сообщений
 
@@ -113,8 +113,8 @@ Long-polling entrypoint. Graceful shutdown: `SIGTERM`/`SIGINT` → `running = fa
 
 | Условие | Действие |
 |---------|----------|
-| verified/admin + ссылка маркетплейса | Проверка лимита → сохранение → `MSG_LINK_SAVED` / `MSG_LINK_LIMIT` |
-| verified/admin + `/list` | `msgList(links)` → inline-клавиатура |
+| verified/admin + `+ фраза` | Проверка длины/лимита → сохранение → `MSG_ITEM_ADDED` / `MSG_ITEM_UPDATED` / `MSG_ITEM_TOO_LONG` / `MSG_ITEM_LIMIT` |
+| verified/admin + `/list` | `msgList(items)` → inline-клавиатура |
 | verified/admin + `/info` | `MSG_INFO` |
 | verified/admin + прочее | `MSG_COMMANDS` |
 | unverified | `upsertUnverifiedChat()` → `MSG_UNVERIFIED` |
@@ -126,8 +126,9 @@ Long-polling entrypoint. Graceful shutdown: `SIGTERM`/`SIGINT` → `running = fa
 
 | Callback data | Действие |
 |---------------|----------|
-| `view:<docId>` | `getLink` → URL + `MSG_COMMANDS` / `MSG_LINK_NOT_FOUND` |
-| `del:<docId>` | `deleteLink` → обновить `/list` inline → `MSG_CB_DELETED` / `MSG_CB_NOT_FOUND` |
+| `add:<docId>` | `addItemDate` → обновить inline → `MSG_CB_ADDED` / `MSG_CB_NOT_FOUND` |
+| `del:<docId>` | `deleteItem` → обновить inline → `MSG_CB_DELETED` / `MSG_CB_NOT_FOUND` |
+| `noop:<docId>` | Ничего (нажатие на название) |
 
 ### pollLoop
 

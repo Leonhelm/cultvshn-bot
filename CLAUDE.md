@@ -18,5 +18,5 @@ cultvshn-bot — Telegram long-polling bot (Keenetic OS 5+)
 |-------|----------------|
 | `/core` | Telegram API, Firestore, env, logger, роутинг poll.js |
 | `/deploy` | Запуск, обновление, daemon-supervisors, Keenetic |
-| `/marketplace` | Парсинг ссылок, бизнес-логика, overview-marketplaces |
+| `/shopping` | Список покупок, предсказания, shopping-overview |
 | `/mascot` | Тексты Мико-Мико, messages.js, тон бота |

@@ -5,7 +5,7 @@
 # Target: Keenetic OS 5 (Entware, /bin/sh, POSIX)
 #
 # - Скачивает zip-архив main-ветки с GitHub
-# - Распаковывает, ставит зависимости, запускает демонов (poll + overview-marketplaces)
+# - Распаковывает, ставит зависимости, запускает демонов (poll + shopping-overview)
 # - Каждые 60 минут проверяет новую версию через GitHub API
 # - При обнаружении — обновляет и перезапускает
 # ============================================================
@@ -113,21 +113,21 @@ stop_overview() {
         return 0
     fi
 
-    if [ ! -f "${PROJECT_DIR}/overview-marketplaces-daemon.pid" ]; then
+    if [ ! -f "${PROJECT_DIR}/shopping-overview-daemon.pid" ]; then
         log_msg "No overview PID file, daemon not running"
         return 0
     fi
 
-    pid=$(cat "${PROJECT_DIR}/overview-marketplaces-daemon.pid" 2>/dev/null)
+    pid=$(cat "${PROJECT_DIR}/shopping-overview-daemon.pid" 2>/dev/null)
     if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
         log_msg "Stale overview PID file, cleaning up"
-        rm -f "${PROJECT_DIR}/overview-marketplaces-daemon.pid"
+        rm -f "${PROJECT_DIR}/shopping-overview-daemon.pid"
         return 0
     fi
 
     log_msg "Stopping overview daemon (PID $pid)..."
     cd "$PROJECT_DIR" || return 1
-    "$NODE_BIN" src/entrypoints/overview-marketplaces-daemon.js stop 2>&1
+    "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js stop 2>&1
 
     i=0
     while [ "$i" -lt 20 ]; do
@@ -141,23 +141,23 @@ stop_overview() {
 
     log_msg "WARN: Overview daemon did not stop, sending SIGKILL"
     kill -9 "$pid" 2>/dev/null
-    rm -f "${PROJECT_DIR}/overview-marketplaces-daemon.pid"
+    rm -f "${PROJECT_DIR}/shopping-overview-daemon.pid"
     sleep 1
     return 0
 }
 
 start_overview() {
     cd "$PROJECT_DIR" || return 1
-    log_msg "Starting overview-marketplaces-daemon..."
-    "$NODE_BIN" src/entrypoints/overview-marketplaces-daemon.js >> "$BOT_LOG" 2>&1 &
+    log_msg "Starting shopping-overview-daemon..."
+    "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js >> "$BOT_LOG" 2>&1 &
     sleep 2
 
-    if [ -f "overview-marketplaces-daemon.pid" ] && kill -0 "$(cat overview-marketplaces-daemon.pid)" 2>/dev/null; then
-        log_msg "Overview-marketplaces-daemon started (PID $(cat overview-marketplaces-daemon.pid))"
+    if [ -f "shopping-overview-daemon.pid" ] && kill -0 "$(cat shopping-overview-daemon.pid)" 2>/dev/null; then
+        log_msg "Shopping-overview-daemon started (PID $(cat shopping-overview-daemon.pid))"
         return 0
     fi
 
-    log_msg "ERROR: Overview-marketplaces-daemon failed to start"
+    log_msg "ERROR: Shopping-overview-daemon failed to start"
     return 1
 }
 
@@ -348,8 +348,8 @@ else
     fi
 
     overview_running=0
-    if [ -f "${PROJECT_DIR}/overview-marketplaces-daemon.pid" ]; then
-        opid=$(cat "${PROJECT_DIR}/overview-marketplaces-daemon.pid" 2>/dev/null)
+    if [ -f "${PROJECT_DIR}/shopping-overview-daemon.pid" ]; then
+        opid=$(cat "${PROJECT_DIR}/shopping-overview-daemon.pid" 2>/dev/null)
         if [ -n "$opid" ] && kill -0 "$opid" 2>/dev/null; then
             overview_running=1
         fi
