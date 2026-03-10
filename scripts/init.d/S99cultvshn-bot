@@ -7,7 +7,7 @@ DEPLOY_SCRIPT="${BASE_DIR}/deploy.sh"
 DEPLOY_PID_FILE="${BASE_DIR}/deploy.pid"
 NODE_BIN="/opt/bin/node"
 BOT_PID_FILE="${BOT_DIR}/poll-daemon.pid"
-OVERVIEW_PID_FILE="${BOT_DIR}/overview-marketplaces-daemon.pid"
+OVERVIEW_PID_FILE="${BOT_DIR}/shopping-overview-daemon.pid"
 LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
 
 start() {
@@ -50,7 +50,7 @@ stop() {
         overview_pid=$(cat "$OVERVIEW_PID_FILE")
         if kill -0 "$overview_pid" 2>/dev/null; then
             echo "Stopping overview daemon (PID $overview_pid)..."
-            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/overview-marketplaces-daemon.js stop 2>&1
+            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js stop 2>&1
             sleep 10
             if kill -0 "$overview_pid" 2>/dev/null; then
                 kill -9 "$overview_pid" 2>/dev/null
