@@ -25,6 +25,11 @@ export async function updateChatRole(chatId, role) {
   });
 }
 
+export async function getAdminChatIds() {
+  const snap = await chatsCol.where("role", "==", "admin").get();
+  return snap.docs.map((doc) => doc.id);
+}
+
 export async function getUnverifiedChats() {
   const snap = await chatsCol.where("role", "==", "unverified").get();
   return snap.docs.map((doc) => ({ chatId: doc.id, ...doc.data() }));

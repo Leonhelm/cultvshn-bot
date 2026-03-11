@@ -11,6 +11,7 @@ import {
   getChat,
   upsertUnverifiedChat,
   updateChatRole,
+  getAdminChatIds,
   getUnverifiedChats,
   terminateFirestore,
 } from "../shared/lib/firestore.js";
@@ -69,9 +70,10 @@ async function notifyAdmins(chatId, info) {
     },
   };
 
-  for (const adminId of env.ADMIN_CHAT_IDS) {
+  const adminIds = await getAdminChatIds();
+  for (const adminId of adminIds) {
     try {
-      await sendMessage(adminId, text, extra);
+      await sendMessage(Number(adminId), text, extra);
     } catch (err) {
       logError(`Failed to notify admin ${adminId}`, err);
     }

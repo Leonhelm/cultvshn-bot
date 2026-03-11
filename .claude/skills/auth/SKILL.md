@@ -23,9 +23,10 @@ user-invocable: true
 | `admin` | Полный доступ + /pending + inline-кнопки верификации |
 | `rejected` | Видит MSG_REJECTED_REPLY, заявка не создаётся повторно |
 
-## Env
+## Определение админов
 
-`ADMIN_CHAT_IDS` — опциональная, через запятую. Если пуста — уведомления не отправляются.
+Админы определяются из Firestore: `chats` где `role === "admin"`.
+Функция `getAdminChatIds()` возвращает их ID.
 
 ## Callback data
 
@@ -35,6 +36,7 @@ user-invocable: true
 
 ```ts
 updateChatRole(chatId: string, role: ChatDoc["role"]): Promise<void>
+getAdminChatIds(): Promise<string[]>
 getUnverifiedChats(): Promise<ChatDocWithId[]>
 ```
 

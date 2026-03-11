@@ -23,6 +23,8 @@ export function updateChatRole(
   role: ChatDoc["role"],
 ): Promise<void>;
 
+export function getAdminChatIds(): Promise<string[]>;
+
 export function getUnverifiedChats(): Promise<ChatDocWithId[]>;
 
 export function upsertUnverifiedChat(

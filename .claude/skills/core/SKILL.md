@@ -32,13 +32,10 @@ src/entrypoints/
 export declare const env: {
   readonly TG_BOT_API_TOKEN: string;
   readonly FIREBASE_SERVICE_ACCOUNT_JSON: string;
-  readonly ADMIN_CHAT_IDS: readonly number[];
 };
 ```
 
 `requireEnv(name)` — внутренняя, бросает `Error` если переменная отсутствует.
-`optionalEnv(name)` — внутренняя, возвращает `""` если переменная отсутствует.
-`ADMIN_CHAT_IDS` — опциональная, через запятую, парсится в `number[]`.
 
 ## logger.js
 
@@ -96,6 +93,7 @@ Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON
 getChat(chatId: string): Promise<ChatDoc | null>
 upsertUnverifiedChat(chatId: string, info: { firstName: string; lastName?: string; username?: string }): Promise<void>
 updateChatRole(chatId: string, role: ChatDoc["role"]): Promise<void>
+getAdminChatIds(): Promise<string[]>
 getUnverifiedChats(): Promise<ChatDocWithId[]>
 terminateFirestore(): Promise<void>
 ```
