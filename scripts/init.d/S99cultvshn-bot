@@ -7,7 +7,6 @@ DEPLOY_SCRIPT="${BASE_DIR}/deploy.sh"
 DEPLOY_PID_FILE="${BASE_DIR}/deploy.pid"
 NODE_BIN="/opt/bin/node"
 BOT_PID_FILE="${BOT_DIR}/poll-daemon.pid"
-OVERVIEW_PID_FILE="${BOT_DIR}/shopping-overview-daemon.pid"
 LOG_FILE="/opt/var/log/${SCRIPT_NAME}.log"
 
 start() {
@@ -46,19 +45,6 @@ stop() {
         rm -f "$DEPLOY_PID_FILE"
     fi
 
-    if [ -f "$OVERVIEW_PID_FILE" ]; then
-        overview_pid=$(cat "$OVERVIEW_PID_FILE")
-        if kill -0 "$overview_pid" 2>/dev/null; then
-            echo "Stopping overview daemon (PID $overview_pid)..."
-            cd "$BOT_DIR" 2>/dev/null && "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js stop 2>&1
-            sleep 10
-            if kill -0 "$overview_pid" 2>/dev/null; then
-                kill -9 "$overview_pid" 2>/dev/null
-            fi
-            stopped=1
-        fi
-    fi
-
     if [ -f "$BOT_PID_FILE" ]; then
         bot_pid=$(cat "$BOT_PID_FILE")
         if kill -0 "$bot_pid" 2>/dev/null; then
@@ -82,7 +68,6 @@ stop() {
 status() {
     deploy_running=0
     bot_running=0
-    overview_running=0
 
     if [ -f "$DEPLOY_PID_FILE" ] && kill -0 "$(cat "$DEPLOY_PID_FILE")" 2>/dev/null; then
         deploy_running=1
@@ -90,13 +75,9 @@ status() {
     if [ -f "$BOT_PID_FILE" ] && kill -0 "$(cat "$BOT_PID_FILE")" 2>/dev/null; then
         bot_running=1
     fi
-    if [ -f "$OVERVIEW_PID_FILE" ] && kill -0 "$(cat "$OVERVIEW_PID_FILE")" 2>/dev/null; then
-        overview_running=1
-    fi
 
     deploy_status="deploy: stopped"
     bot_status="bot: stopped"
-    overview_status="overview: stopped"
 
     if [ "$deploy_running" -eq 1 ]; then
         deploy_status="deploy: PID $(cat "$DEPLOY_PID_FILE")"
@@ -104,11 +85,8 @@ status() {
     if [ "$bot_running" -eq 1 ]; then
         bot_status="bot: PID $(cat "$BOT_PID_FILE")"
     fi
-    if [ "$overview_running" -eq 1 ]; then
-        overview_status="overview: PID $(cat "$OVERVIEW_PID_FILE")"
-    fi
 
-    echo "$SCRIPT_NAME — $deploy_status, $bot_status, $overview_status"
+    echo "$SCRIPT_NAME — $deploy_status, $bot_status"
 }
 
 case "$1" in

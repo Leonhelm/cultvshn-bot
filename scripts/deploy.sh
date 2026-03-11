@@ -5,7 +5,7 @@
 # Target: Keenetic OS 5 (Entware, /bin/sh, POSIX)
 #
 # - Скачивает zip-архив main-ветки с GitHub
-# - Распаковывает, ставит зависимости, запускает демонов (poll + shopping-overview)
+# - Распаковывает, ставит зависимости, запускает демона (poll)
 # - Каждые 60 минут проверяет новую версию через GitHub API
 # - При обнаружении — обновляет и перезапускает
 # ============================================================
@@ -106,61 +106,6 @@ start_bot() {
     return 1
 }
 
-# ======================== Overview management ========================
-
-stop_overview() {
-    if [ ! -d "$PROJECT_DIR" ]; then
-        return 0
-    fi
-
-    if [ ! -f "${PROJECT_DIR}/shopping-overview-daemon.pid" ]; then
-        log_msg "No overview PID file, daemon not running"
-        return 0
-    fi
-
-    pid=$(cat "${PROJECT_DIR}/shopping-overview-daemon.pid" 2>/dev/null)
-    if [ -z "$pid" ] || ! kill -0 "$pid" 2>/dev/null; then
-        log_msg "Stale overview PID file, cleaning up"
-        rm -f "${PROJECT_DIR}/shopping-overview-daemon.pid"
-        return 0
-    fi
-
-    log_msg "Stopping overview daemon (PID $pid)..."
-    cd "$PROJECT_DIR" || return 1
-    "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js stop 2>&1
-
-    i=0
-    while [ "$i" -lt 20 ]; do
-        if ! kill -0 "$pid" 2>/dev/null; then
-            log_msg "Overview daemon stopped"
-            return 0
-        fi
-        sleep 1
-        i=$((i + 1))
-    done
-
-    log_msg "WARN: Overview daemon did not stop, sending SIGKILL"
-    kill -9 "$pid" 2>/dev/null
-    rm -f "${PROJECT_DIR}/shopping-overview-daemon.pid"
-    sleep 1
-    return 0
-}
-
-start_overview() {
-    cd "$PROJECT_DIR" || return 1
-    log_msg "Starting shopping-overview-daemon..."
-    "$NODE_BIN" src/entrypoints/shopping-overview-daemon.js >> "$BOT_LOG" 2>&1 &
-    sleep 2
-
-    if [ -f "shopping-overview-daemon.pid" ] && kill -0 "$(cat shopping-overview-daemon.pid)" 2>/dev/null; then
-        log_msg "Shopping-overview-daemon started (PID $(cat shopping-overview-daemon.pid))"
-        return 0
-    fi
-
-    log_msg "ERROR: Shopping-overview-daemon failed to start"
-    return 1
-}
-
 # ======================== Deploy operations ========================
 
 download_and_extract() {
@@ -254,8 +199,6 @@ deploy() {
         return 1
     fi
 
-    start_overview
-
     printf '%s' "$new_sha" > "$SHA_FILE"
     log_msg "Deployed successfully (SHA: $new_sha)"
     return 0
@@ -265,7 +208,6 @@ deploy() {
 
 cleanup_and_exit() {
     log_msg "Received termination signal, shutting down..."
-    stop_overview
     stop_bot
     rm -f "$DEPLOY_PID_FILE"
     log_msg "Deploy script exited"
@@ -308,21 +250,18 @@ if [ "$need_deploy" -eq 1 ]; then
         if [ -d "$PROJECT_DIR" ] && [ -f "${PROJECT_DIR}/package.json" ]; then
             log_msg "WARN: Cannot reach GitHub, starting existing deployment"
             start_bot
-            start_overview
         else
             log_msg "FATAL: No existing deployment and cannot reach GitHub"
             rm -f "$DEPLOY_PID_FILE"
             exit 1
         fi
     else
-        stop_overview
         stop_bot
         if ! deploy "$remote_sha"; then
             if [ -d "$PROJECT_DIR" ] && [ -f "${PROJECT_DIR}/package.json" ]; then
                 log_msg "Deploy failed, attempting to start restored version"
                 link_env
                 start_bot
-                start_overview
             else
                 log_msg "FATAL: Initial deploy failed with no fallback"
                 rm -f "$DEPLOY_PID_FILE"
@@ -347,20 +286,6 @@ else
         log_msg "Bot already running (PID $pid)"
     fi
 
-    overview_running=0
-    if [ -f "${PROJECT_DIR}/shopping-overview-daemon.pid" ]; then
-        opid=$(cat "${PROJECT_DIR}/shopping-overview-daemon.pid" 2>/dev/null)
-        if [ -n "$opid" ] && kill -0 "$opid" 2>/dev/null; then
-            overview_running=1
-        fi
-    fi
-
-    if [ "$overview_running" -eq 0 ]; then
-        log_msg "Overview not running, starting..."
-        start_overview
-    else
-        log_msg "Overview already running (PID $opid)"
-    fi
 fi
 
 log_msg "Entering update loop (check interval: ${CHECK_INTERVAL}s)"
@@ -382,7 +307,6 @@ while true; do
     fi
 
     log_msg "Update available: $local_sha -> $remote_sha"
-    stop_overview
     stop_bot
 
     if deploy "$remote_sha"; then
@@ -393,7 +317,6 @@ while true; do
             log_msg "Attempting to restart existing version"
             link_env
             start_bot
-            start_overview
         else
             log_msg "CRITICAL: No working version available"
         fi

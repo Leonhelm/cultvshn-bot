@@ -6,9 +6,6 @@
     "start:poll": "node src/entrypoints/poll.js",
     "start:poll-daemon": "node src/entrypoints/poll-daemon.js",
     "stop:poll-daemon": "node src/entrypoints/poll-daemon.js stop",
-    "start:shopping-overview": "node src/entrypoints/shopping-overview.js",
-    "start:shopping-overview-daemon": "node src/entrypoints/shopping-overview-daemon.js",
-    "stop:shopping-overview-daemon": "node src/entrypoints/shopping-overview-daemon.js stop",
     "typecheck": "tsc --noEmit"
   },
   "engines": {
