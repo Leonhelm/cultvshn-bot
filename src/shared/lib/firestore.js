@@ -18,6 +18,23 @@ export async function terminateFirestore() {
   await app.delete();
 }
 
+export async function updateChatRole(chatId, role) {
+  await chatsCol.doc(chatId).update({
+    role,
+    updatedAt: FieldValue.serverTimestamp(),
+  });
+}
+
+export async function getAdminChatIds() {
+  const snap = await chatsCol.where("role", "==", "admin").get();
+  return snap.docs.map((doc) => doc.id);
+}
+
+export async function getUnverifiedChats() {
+  const snap = await chatsCol.where("role", "==", "unverified").get();
+  return snap.docs.map((doc) => ({ chatId: doc.id, ...doc.data() }));
+}
+
 export async function upsertUnverifiedChat(chatId, info) {
   const ref = chatsCol.doc(chatId);
   const snap = await ref.get();
