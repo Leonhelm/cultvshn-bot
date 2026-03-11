@@ -32,10 +32,13 @@ src/entrypoints/
 export declare const env: {
   readonly TG_BOT_API_TOKEN: string;
   readonly FIREBASE_SERVICE_ACCOUNT_JSON: string;
+  readonly ADMIN_CHAT_IDS: readonly number[];
 };
 ```
 
 `requireEnv(name)` — внутренняя, бросает `Error` если переменная отсутствует.
+`optionalEnv(name)` — внутренняя, возвращает `""` если переменная отсутствует.
+`ADMIN_CHAT_IDS` — опциональная, через запятую, парсится в `number[]`.
 
 ## logger.js
 
@@ -66,6 +69,8 @@ interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: Tg
 |---------|-----------|----------------|
 | `getUpdates` | `(offset: number, timeout?: number) → Promise<TgUpdate[]>` | getUpdates |
 | `sendMessage` | `(chatId, text, extra?) → Promise<{ message_id }>` | sendMessage |
+| `answerCallbackQuery` | `(callbackQueryId, text?) → Promise<boolean>` | answerCallbackQuery |
+| `editMessageText` | `(chatId, messageId, text, extra?) → Promise<TgMessage>` | editMessageText |
 | `deleteMessage` | `(chatId, messageId) → Promise<boolean>` | deleteMessage (catch → false) |
 
 ## firestore.js
@@ -80,7 +85,7 @@ Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON
 | `firstName` | string | Имя |
 | `lastName` | string? | Фамилия |
 | `username` | string? | @username |
-| `role` | `'unverified' \| 'verified' \| 'admin'` | Роль |
+| `role` | `'unverified' \| 'verified' \| 'admin' \| 'rejected'` | Роль |
 | `state` | string? | Состояние (резерв) |
 | `createdAt` | Timestamp | Создание |
 | `updatedAt` | Timestamp | Обновление |
@@ -90,6 +95,8 @@ Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON
 ```ts
 getChat(chatId: string): Promise<ChatDoc | null>
 upsertUnverifiedChat(chatId: string, info: { firstName: string; lastName?: string; username?: string }): Promise<void>
+updateChatRole(chatId: string, role: ChatDoc["role"]): Promise<void>
+getUnverifiedChats(): Promise<ChatDocWithId[]>
 terminateFirestore(): Promise<void>
 ```
 
@@ -106,9 +113,22 @@ Long-polling entrypoint. Graceful shutdown: `SIGTERM`/`SIGINT` → `running = fa
 
 | Условие | Действие |
 |---------|----------|
+| admin + `/pending` | Список unverified |
 | verified/admin + `/info` | `MSG_INFO` |
-| verified/admin + прочее | `MSG_COMMANDS` |
-| unverified | `upsertUnverifiedChat()` → `MSG_UNVERIFIED` |
+| admin + прочее | `MSG_ADMIN_COMMANDS` |
+| verified + прочее | `MSG_COMMANDS` |
+| rejected | `MSG_REJECTED_REPLY` |
+| unverified (новый) | `upsertUnverifiedChat()` + `notifyAdmins()` → `MSG_UNVERIFIED` |
+| unverified (повторный) | `MSG_UNVERIFIED` |
+
+### handleCallbackQuery — верификация
+
+| Callback data | Действие |
+|--------------|----------|
+| `verify:<chatId>` | `updateChatRole("verified")` → уведомление юзеру + обновление сообщения админу |
+| `reject:<chatId>` | `updateChatRole("rejected")` → уведомление юзеру + обновление сообщения админу |
+
+Подробнее: `/auth` skill.
 
 Каждый ответ: `sendMessage` → `trackAndDeletePrevious(bot)`.
 Каждое входящее: `trackAndDeletePrevious(user)`.
