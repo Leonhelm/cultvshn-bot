@@ -156,8 +156,6 @@ async function handleCallbackQuery(cb) {
     } else {
       await answerCallbackQuery(cb.id, MSG_CB_NOT_FOUND);
     }
-  } else if (action === "noop") {
-    await answerCallbackQuery(cb.id);
   } else {
     await answerCallbackQuery(cb.id);
   }
