@@ -14,27 +14,25 @@ scripts/
 └── init.d/
     └── S99cultvshn-bot                     # Keenetic init.d сервис
 src/entrypoints/
-├── poll-daemon.js                          # Supervisor для poll.js
-└── shopping-overview-daemon.js             # Supervisor для shopping-overview.js
+└── poll-daemon.js                          # Supervisor для poll.js
 ```
 
 ## Механика deploy.sh
 
-- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon` и `shopping-overview-daemon`
-- Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop всех демонов → deploy → start; при ошибке — откат из `.old`
+- Скачивает zip main-ветки, распаковывает в `cultvshn-bot-main/`, symlink `.env`, `npm ci`, запускает `poll-daemon`
+- Каждые 60 мин проверяет SHA через GitHub API; при изменении — stop демона → deploy → start; при ошибке — откат из `.old`
 - SHA сохраняется только после успешного деплоя
 - Базовая директория: `/tmp/mnt/181ADB641ADB3E06/projects/cultvshn`
 - Layout: `.env`, `cultvshn-bot-main/`, `deploy.pid`, `.current-sha`
 - Логи: `/opt/var/log/cultvshn-bot.log`
 
-## Daemon-supervisors
+## Daemon-supervisor
 
-Два одинаковых по структуре файла: `poll-daemon.js` и `shopping-overview-daemon.js`.
-Каждый управляет своим child-процессом (`poll.js` / `shopping-overview.js`).
+`poll-daemon.js` управляет child-процессом `poll.js`.
 
 ### Поведение
 
-- `startDaemon()` — spawn child через `node`, записывает PID в файл (`poll-daemon.pid` / `shopping-overview-daemon.pid`)
+- `startDaemon()` — spawn child через `node`, записывает PID в файл (`poll-daemon.pid`)
 - При аварийном exit child (code ≠ 0): перезапуск с exponential backoff
   - Начало: 1с, множитель: ×2, потолок: 60с
   - Сброс backoff если child проработал ≥ 60с (стабильный)
@@ -48,9 +46,6 @@ src/entrypoints/
 ```bash
 node src/entrypoints/poll-daemon.js           # start
 node src/entrypoints/poll-daemon.js stop      # stop (SIGTERM → 15s → SIGKILL)
-
-node src/entrypoints/shopping-overview-daemon.js
-node src/entrypoints/shopping-overview-daemon.js stop
 ```
 
 ### `stopDaemon()`
@@ -86,9 +81,9 @@ chmod +x /opt/etc/init.d/S99cultvshn-bot
 ## Управление
 
 ```bash
-/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + все демоны (bot + shopping-overview)
-/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + все демоны
+/opt/etc/init.d/S99cultvshn-bot start    # Запуск deploy + демон
+/opt/etc/init.d/S99cultvshn-bot stop     # Остановка deploy + демон
 /opt/etc/init.d/S99cultvshn-bot restart  # Перезапуск всех компонентов
-/opt/etc/init.d/S99cultvshn-bot status   # Статус: deploy, bot, overview
+/opt/etc/init.d/S99cultvshn-bot status   # Статус: deploy, bot
 tail -f /opt/var/log/cultvshn-bot.log    # Логи
 ```

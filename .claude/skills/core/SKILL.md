@@ -66,14 +66,12 @@ interface TgUpdate { update_id: number; message?: TgMessage; callback_query?: Tg
 |---------|-----------|----------------|
 | `getUpdates` | `(offset: number, timeout?: number) → Promise<TgUpdate[]>` | getUpdates |
 | `sendMessage` | `(chatId, text, extra?) → Promise<{ message_id }>` | sendMessage |
-| `answerCallbackQuery` | `(callbackQueryId, text?) → Promise<boolean>` | answerCallbackQuery |
-| `editMessageText` | `(chatId, messageId, text, extra?) → Promise<TgMessage>` | editMessageText |
 | `deleteMessage` | `(chatId, messageId) → Promise<boolean>` | deleteMessage (catch → false) |
 
 ## firestore.js
 
 Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON`.
-Коллекции: `chats`, `items`.
+Коллекция: `chats`.
 
 ### Коллекция `chats/{chatId}`
 
@@ -87,18 +85,13 @@ Firebase Admin SDK, `initializeApp` + `cert` из `FIREBASE_SERVICE_ACCOUNT_JSON
 | `createdAt` | Timestamp | Создание |
 | `updatedAt` | Timestamp | Обновление |
 
-### Функции чатов
+### Функции
 
 ```ts
 getChat(chatId: string): Promise<ChatDoc | null>
 upsertUnverifiedChat(chatId: string, info: { firstName: string; lastName?: string; username?: string }): Promise<void>
 terminateFirestore(): Promise<void>
 ```
-
-### Функции покупок
-
-Документированы в `/shopping` (доменная модель списка покупок):
-`saveItem`, `countItemsByChat`, `listItemsByChat`, `listAllItems`, `getItem`, `deleteItem`, `addItemDate`, `updateItemPrediction`
 
 ## poll.js — роутинг сообщений
 
@@ -113,8 +106,6 @@ Long-polling entrypoint. Graceful shutdown: `SIGTERM`/`SIGINT` → `running = fa
 
 | Условие | Действие |
 |---------|----------|
-| verified/admin + `+ фраза` | Проверка длины/лимита → сохранение → `MSG_ITEM_ADDED` / `MSG_ITEM_UPDATED` / `MSG_ITEM_TOO_LONG` / `MSG_ITEM_LIMIT` |
-| verified/admin + `/list` | `msgList(items)` → inline-клавиатура |
 | verified/admin + `/info` | `MSG_INFO` |
 | verified/admin + прочее | `MSG_COMMANDS` |
 | unverified | `upsertUnverifiedChat()` → `MSG_UNVERIFIED` |
@@ -122,15 +113,7 @@ Long-polling entrypoint. Graceful shutdown: `SIGTERM`/`SIGINT` → `running = fa
 Каждый ответ: `sendMessage` → `trackAndDeletePrevious(bot)`.
 Каждое входящее: `trackAndDeletePrevious(user)`.
 
-### handleCallbackQuery
-
-| Callback data | Действие |
-|---------------|----------|
-| `add:<docId>` | `addItemDate` → обновить inline → `MSG_CB_ADDED` / `MSG_CB_NOT_FOUND` |
-| `del:<docId>` | `deleteItem` → обновить inline → `MSG_CB_DELETED` / `MSG_CB_NOT_FOUND` |
-| `noop:<docId>` | Ничего (нажатие на название) |
-
 ### pollLoop
 
-`while (running)` → `getUpdates(offset)` → route `message` / `callback_query`.
+`while (running)` → `getUpdates(offset)` → route `message`.
 При ошибке: `logError` + sleep 5с (если `running`).
